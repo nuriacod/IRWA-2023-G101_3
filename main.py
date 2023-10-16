@@ -13,6 +13,8 @@ import re
 from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 import pandas as pd
+import tkinter as Tk
+import datetime
 
 
 import nltk
@@ -73,19 +75,47 @@ def preprocessing(text, word_dist):
     text = re.sub(r'\b\w{1,1}\b', '', text)
 
     # Tokenize the text to get a list of terms
-    text = text.split() 
-      
-    word_dist.update(text)
+    text = text.split()
 
     # Eliminate the stopwords
     text = [word for word in text if not word in stop_words] 
 
     # Perform stemming
     text = [stemmer.stem(word) for word in text]
+    word_dist.update(text)
 
     text = ' '.join(text)
 
     return text
+
+def temporal(list_of_tweets):
+
+    # Create a dictionary to store the tweet counts per day
+    tweet_counts = {}
+
+    # Assuming your 'created_at' field is a list of timestamps
+    for tweet in list_of_tweets:
+        created_at = tweet.split('|')[2].strip()
+        created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y') # Adjust the timestamp format if needed
+        date = created_at.date()
+        
+        # Update the tweet count for this date
+        tweet_counts[date] = tweet_counts.get(date, 0) + 1
+
+    # Sort the dictionary by date
+    sorted_tweet_counts = sorted(tweet_counts.items())
+
+    # Extract the dates and corresponding tweet counts
+    dates, counts = zip(*sorted_tweet_counts)
+
+    # Create a line plot to visualize tweet activity over time
+    plt.figure(figsize=(10, 6))
+    plt.plot(dates, counts, marker='o')
+    plt.title('Temporal Distribution of Tweets')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Tweets')
+    plt.grid()
+    plt.show()
 
 
 def main():
@@ -112,7 +142,9 @@ def main():
             our_str = str(i) + ' | ' + preprocessing(json_line['full_text'],word_dist) + ' | ' + str(json_line['created_at']) + ' | ' + ht_list + ' | ' + str(json_line['favorite_count']) + ' | ' + str(json_line['retweet_count']) + ' | ' + our_url
             list_of_tweets.append(our_str)
 
-    print(word_dist.keys())
+    # print(word_dist.keys())
+    #print(len(list_of_tweets[1][2]))
+
     '''for i in range(10):
         print(list_of_tweets[i+30]+'\n')'''
     
@@ -120,6 +152,7 @@ def main():
 
     #font_path = '/path/to/your/truetype/font.ttf'
 
+    #WORDCLOUD
     wordcloud = WordCloud(width = 800, height = 800,
             background_color ='white').generate(' '.join(word_dist.keys()))
     plt.figure(figsize = (8, 8), facecolor = None)
@@ -128,15 +161,57 @@ def main():
     plt.tight_layout(pad = 0)
     plt.show()
 
+    #LENGTH DISTRIBUTION
+
+    text_lengths = []
+
+    for tweet in list_of_tweets:
+        #get the second element -> tweet text
+        full_text = tweet.split('|')[1].strip()
+        words = full_text.split()
+        # Append the word count to the word_counts array
+        text_lengths.append(len(words))
+
+    # Create a histogram plot
+    plt.hist(text_lengths, bins=20, edgecolor='black')
+
+    # Set labels and title
+    plt.xlabel('Text Length')
+    plt.ylabel('Frequency')
+    plt.title('Distribution of Full Text Lengths')
+
+    # Display the plot
+    plt.show()
+
+    #VOCABULARY SIZE (unique words):
+
+    total_count = 0
+
+    for tweet in list_of_tweets:
+        #get the second element -> tweet text
+        full_text = tweet.split('|')[1].strip()
+        words = full_text.split()
+        total_count+= len(words)
+
+    print('NUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
+    print('NUMBER OF TOTAL WORDS:', total_count)  
+
+    #RANKING OF MOST RETWEETED TWEETS
+    def get_retweet_count(tweet):
+        tweet_parts = tweet.split('|')
+        retweet_count = int(tweet_parts[-2].strip())  # Assuming retweet_count is the second-to-last field
+        return retweet_count
+
+    # Sort the list of tweets based on retweet count in descending order (highest retweet count first)
+    sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
+    print(sorted_tweets[:5])
+
+    #TEMPORAL ANALYSIS
+    
+    temporal(list_of_tweets)
+
+
 if __name__ == '__main__':
     main()
-
-    #%%  
-    from wordcloud import WordCloud, STOPWORDS
-
-    wordcloud = WordCloud(width = 800, height = 800,
-    background_color ='white',
-    stopwords = stopwords,
-    min_font_size = 10).generate(list_of_tweets)
 
     
