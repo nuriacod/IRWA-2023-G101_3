@@ -18,7 +18,7 @@ import datetime
 
 
 import nltk
-nltk.download('stopwords')
+#nltk.download('stopwords')
 
 
 
@@ -92,7 +92,7 @@ def temporal(list_of_tweets):
 
     # Create a dictionary to store the tweet counts per day
     tweet_counts = {}
-
+    
     # Assuming your 'created_at' field is a list of timestamps
     for tweet in list_of_tweets:
         created_at = tweet.split('|')[2].strip()
