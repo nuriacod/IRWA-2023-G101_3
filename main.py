@@ -23,11 +23,17 @@ import nltk
 nltk.download('stopwords')
 
 
+def rep(m):
+    s=m.group(1)
+    return ' '.join(re.split(r'(?=[A-Z])', s))
 
 def preprocessing(text, word_dist):
     stemmer = PorterStemmer()
     stop_words = set(stopwords.words("english"))
-    
+
+    # Hashtag processing: split the hashtag into a list of words. #ThisIsAnExample --> # This Is An Example
+    text = re.sub(r'#(\w+)', rep, text)
+
     # Transform in lowercase
     text = text.lower()
 
@@ -37,7 +43,6 @@ def preprocessing(text, word_dist):
     # Remove urls from text in case it is a quote tweet
     text = re.sub(r'http\S+', '', text)
 
-    
     # Remove words with numbers but no hashtags 
     pattern = r'\b(?!\w*#\w+)\w*\d+\w*\b'
     text = re.sub(pattern, '', text)
@@ -83,7 +88,7 @@ def preprocessing(text, word_dist):
     text = [word for word in text if not word in stop_words] 
 
     # Perform stemming
-    text = [stemmer.stem(word) for word in text]
+    # text = [stemmer.stem(word) for word in text]
     word_dist.update(text)
 
     text = ' '.join(text)
@@ -98,7 +103,10 @@ def temporal(list_of_tweets):
     # Assuming your 'created_at' field is a list of timestamps
     for tweet in list_of_tweets:
         created_at = tweet.split('|')[3].strip()
-        created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y') # Adjust the timestamp format if needed
+        print(created_at)
+
+        created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y')
+
         date = created_at.date()
         
         # Update the tweet count for this date
@@ -171,7 +179,9 @@ def main():
     plt.imshow(wordcloud)
     plt.axis("off")
     plt.tight_layout(pad = 0)
-    plt.show()
+    plt.savefig('./results/wordcloud.jpg')
+    plt.close()
+
 
     #LENGTH DISTRIBUTION
 
@@ -192,8 +202,9 @@ def main():
     plt.ylabel('Frequency')
     plt.title('Distribution of Full Text Lengths')
 
-    # Display the plot
-    plt.show()
+    # Display the plot 
+    plt.savefig('./results/full_length_distribution.jpg')
+    plt.close()
 
     #VOCABULARY SIZE (unique words):
 
@@ -205,7 +216,7 @@ def main():
         words = full_text.split()
         total_count+= len(words)
 
-    print('NUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
+    print('\nNUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
     print('NUMBER OF TOTAL WORDS:', total_count)  
 
     #RANKING OF MOST RETWEETED TWEETS
@@ -216,11 +227,12 @@ def main():
 
     # Sort the list of tweets based on retweet count in descending order (highest retweet count first)
     sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
+    print('\n- Top 5 most retweeted tweets:')
     print(sorted_tweets[:5])
 
     #TEMPORAL ANALYSIS
     
-    temporal(list_of_tweets)
+    # temporal(list_of_tweets)
 
 
 if __name__ == '__main__':
