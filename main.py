@@ -15,10 +15,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import tkinter as Tk
 import datetime
+import csv
+from csv import reader
 
 
 import nltk
-#nltk.download('stopwords')
+nltk.download('stopwords')
 
 
 
@@ -42,7 +44,7 @@ def preprocessing(text, word_dist):
 
 
     #remove punctuation
-    our_punct = string.punctuation.replace('#', '')
+    our_punct = string.punctuation #.replace('#', '')
 
     tablePunt = str.maketrans("","",our_punct) 
 
@@ -92,10 +94,10 @@ def temporal(list_of_tweets):
 
     # Create a dictionary to store the tweet counts per day
     tweet_counts = {}
-    
+
     # Assuming your 'created_at' field is a list of timestamps
     for tweet in list_of_tweets:
-        created_at = tweet.split('|')[2].strip()
+        created_at = tweet.split('|')[3].strip()
         created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y') # Adjust the timestamp format if needed
         date = created_at.date()
         
@@ -117,29 +119,39 @@ def temporal(list_of_tweets):
     plt.grid()
     plt.show()
 
+def csv_to_dict(filepath):
+    d = {}
+    with open(filepath, 'r', newline='') as file:
+        reader = csv.reader(file, delimiter='\t')  # Use tab as the delimiter
+        for row in reader:
+            if len(row) == 2:
+                key, value = row
+                d[str(value)] = key
+    return d
 
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
+    dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
     # Initialize dictionary for word count
     word_dist = FreqDist()
     list_of_tweets= []
-    docid_tweetid = {}
+    docid_tweetid = csv_to_dict(dict_path)
     with open(docs_path) as fp:
         for i, line in enumerate(fp):
             # Transform each line of the json file into a python dictionary
             json_line = json.loads(line)
-            docid_tweetid[json_line['id']] = i
-
-            our_url = ''
+            our_docid = docid_tweetid[str(json_line['id'])]
             if len(json_line['entities']["urls"]) > 0:
                 our_url = json_line['entities']['urls'][0]['expanded_url']
+            else:
+                our_url = 'https://twitter.com/'+str(json_line['user']['screen_name'])+'/status/'+str(json_line['id'])
 
             ht_list = ''
             for element in json_line['entities']['hashtags']:
                 ht_list += ' '+element['text']
 
             
-            our_str = str(i) + ' | ' + preprocessing(json_line['full_text'],word_dist) + ' | ' + str(json_line['created_at']) + ' | ' + ht_list + ' | ' + str(json_line['favorite_count']) + ' | ' + str(json_line['retweet_count']) + ' | ' + our_url
+            our_str = str(our_docid) + ' | ' + str(json_line['id']) + ' | ' + preprocessing(json_line['full_text'],word_dist) + ' | ' + str(json_line['created_at']) + ' | ' + ht_list + ' | ' + str(json_line['favorite_count']) + ' | ' + str(json_line['retweet_count']) + ' | ' + our_url
             list_of_tweets.append(our_str)
 
     # print(word_dist.keys())
@@ -167,7 +179,7 @@ def main():
 
     for tweet in list_of_tweets:
         #get the second element -> tweet text
-        full_text = tweet.split('|')[1].strip()
+        full_text = tweet.split('|')[2].strip()
         words = full_text.split()
         # Append the word count to the word_counts array
         text_lengths.append(len(words))
@@ -189,7 +201,7 @@ def main():
 
     for tweet in list_of_tweets:
         #get the second element -> tweet text
-        full_text = tweet.split('|')[1].strip()
+        full_text = tweet.split('|')[2].strip()
         words = full_text.split()
         total_count+= len(words)
 
@@ -199,7 +211,7 @@ def main():
     #RANKING OF MOST RETWEETED TWEETS
     def get_retweet_count(tweet):
         tweet_parts = tweet.split('|')
-        retweet_count = int(tweet_parts[-2].strip())  # Assuming retweet_count is the second-to-last field
+        retweet_count = int(tweet_parts[6].strip())  # Assuming retweet_count is the second-to-last field
         return retweet_count
 
     # Sort the list of tweets based on retweet count in descending order (highest retweet count first)
