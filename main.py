@@ -103,7 +103,6 @@ def temporal(list_of_tweets):
     # Assuming your 'created_at' field is a list of timestamps
     for tweet in list_of_tweets:
         created_at = tweet.split('|')[3].strip()
-        print(created_at)
 
         created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y')
 
@@ -125,7 +124,8 @@ def temporal(list_of_tweets):
     plt.xlabel('Date')
     plt.ylabel('Number of Tweets')
     plt.grid()
-    plt.show()
+    plt.savefig('./results/temporalPlot.jpg')
+    plt.close()
 
 def csv_to_dict(filepath):
     d = {}
@@ -232,7 +232,7 @@ def main():
 
     #TEMPORAL ANALYSIS
     
-    # temporal(list_of_tweets)
+    temporal(list_of_tweets)
 
 
 if __name__ == '__main__':
