@@ -1,5 +1,5 @@
 # Ignorar carpeta
 IRWA_data_2023
-.DS_Store
+**/.DS_Store
 
 __pycache__/
