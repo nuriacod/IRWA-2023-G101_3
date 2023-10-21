@@ -28,6 +28,10 @@ The project relies on the following Python libraries:
 - Pandas
 - NumPy
 <br></br>
+
+## Results 
+![alt text](./results/img.png)
+
 ## Authors
 - Núria Codina 
 - Maria Guasch 
