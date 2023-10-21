@@ -32,12 +32,16 @@ The project relies on the following Python libraries:
 ## Results 
 
 ### WORD CLOUD
-![alt text](results/wordcloud.jpg)
+
+<img src="results/wordcloud.jpg" alt="alt text" width="300" height="300">
+
 ### TWEET LENGTH DISTRIBUTION
-![alt text](results/full_length_distribution.jpg)
+<img src="results/full_length_distribution.jpg" alt="alt text" width="300" height="200">
+
 
 ### TEMPORAL ANALYSIS
-![alt text](results/temporalPlot.jpg)
+<img src="results/temporalPlot.jpg" alt="alt text" width="300" height="200">
+
 
 
 
