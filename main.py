@@ -1,33 +1,37 @@
-from collections import defaultdict
-from array import array
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 from nltk import FreqDist
-import math
+from wordcloud import WordCloud
+from array import array
+from csv import reader
+import matplotlib.pyplot as plt
+import pandas as pd
+#import tkinter as Tk
 import numpy as np
-import collections
-from numpy import linalg as la
+import math
 import json
 import string
 import re
-from wordcloud import WordCloud, STOPWORDS
-import matplotlib.pyplot as plt
-import pandas as pd
-import tkinter as Tk
 import datetime
 import csv
-from csv import reader
-
 
 import nltk
 nltk.download('stopwords')
 
 
 def rep(m):
+    """
+    Description: Splits a hashtag into a list of words based on capitalization.
+    """
     s=m.group(1)
     return ' '.join(re.split(r'(?=[A-Z])', s))
 
+
 def preprocessing(text, word_dist):
+    """
+    Description: This function preprocesses text data for natural language processing tasks 
+    and updates the dictionary of words of word frequency . Then returns the preprocessed text.
+    """
     stemmer = PorterStemmer()
     stop_words = set(stopwords.words("english"))
 
@@ -87,28 +91,92 @@ def preprocessing(text, word_dist):
     # Eliminate the stopwords
     text = [word for word in text if not word in stop_words] 
 
-    # Perform stemming
-    # text = [stemmer.stem(word) for word in text]
+    # Add unique words to vocabulary
     word_dist.update(text)
-
+    
+    # Perform stemming
+    text = [stemmer.stem(word) for word in text]
+    
     text = ' '.join(text)
 
     return text
 
-def temporal(list_of_tweets):
 
-    # Create a dictionary to store the tweet counts per day
+def csv_to_dict(filepath):
+    """
+    Converts a tab-delimited CSV file into a dictionary with values from the second 
+    column as keys and values from the first column as values
+    """
+    d = {}
+    with open(filepath, 'r', newline='') as file:
+        # Use tab as the delimiter
+        reader = csv.reader(file, delimiter='\t')  
+        for row in reader:
+            if len(row) == 2:
+                key, value = row
+                d[str(value)] = key
+    return d
+
+def get_fields(line,doc_id,word_dist):
+    """
+    Extracts and formats various Twitter data fields from a JSON object and returns them 
+    as a concatenated string.
+    """
+    
+    # Transform each line of the json file into a python dictionary
+    if len(line['entities']["urls"]) > 0:
+        our_url = line['entities']['urls'][0]['expanded_url']
+    else:
+        our_url = 'https://twitter.com/'+str(line['user']['screen_name'])+'/status/'+str(line['id'])
+
+    ht_list = ''
+    for element in line['entities']['hashtags']:
+        ht_list += ' '+element['text']
+
+    
+    our_str = str(doc_id) + ' | ' + str(line['id']) + ' | ' + preprocessing(line['full_text'],word_dist)+ ' | ' + \
+            str(line['created_at']) + ' | ' + ht_list + ' | ' + str(line['favorite_count']) + ' | ' + \
+            str(line['retweet_count']) + ' | ' + our_url
+            
+    return our_str
+    
+def get_retweet_count(tweet):
+    """
+    Retrieves the retweet count from a formatted tweet string.
+    """
+    tweet_parts = tweet.split('|')
+    # Given retweet_count is the second-to-last field
+    retweet_count = int(tweet_parts[6].strip())  
+    return retweet_count
+    
+def update_count(tweet,total_count):
+    """
+    Updates a running word count based on the full text of a tweet and returns the new total word count.
+    """
+    full_text = tweet.split('|')[2].strip()
+    words = full_text.split()
+    total_count+= len(words)
+    return total_count
+
+
+
+def temporal_plot(list_of_tweets):
+    """
+    Description: Generates a temporal plot of tweet activity over time based on a list of tweets. 
+    The function parses the creation dates of tweets, counts the tweets per day, and 
+    visualizes the temporal distribution in a line plot.
+    """
+
+    # Tweet counts per day
     tweet_counts = {}
 
-    # Assuming your 'created_at' field is a list of timestamps
     for tweet in list_of_tweets:
+        # Get timeStamp field and convert to date type 
         created_at = tweet.split('|')[3].strip()
-
         created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y')
-
         date = created_at.date()
         
-        # Update the tweet count for this date
+        # Update the tweet count
         tweet_counts[date] = tweet_counts.get(date, 0) + 1
 
     # Sort the dictionary by date
@@ -126,53 +194,12 @@ def temporal(list_of_tweets):
     plt.grid()
     plt.savefig('./results/temporalPlot.jpg')
     plt.close()
-
-def csv_to_dict(filepath):
-    d = {}
-    with open(filepath, 'r', newline='') as file:
-        reader = csv.reader(file, delimiter='\t')  # Use tab as the delimiter
-        for row in reader:
-            if len(row) == 2:
-                key, value = row
-                d[str(value)] = key
-    return d
-
-def main():
-    docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
-    dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
-    # Initialize dictionary for word count
-    word_dist = FreqDist()
-    list_of_tweets= []
-    docid_tweetid = csv_to_dict(dict_path)
-    with open(docs_path) as fp:
-        for i, line in enumerate(fp):
-            # Transform each line of the json file into a python dictionary
-            json_line = json.loads(line)
-            our_docid = docid_tweetid[str(json_line['id'])]
-            if len(json_line['entities']["urls"]) > 0:
-                our_url = json_line['entities']['urls'][0]['expanded_url']
-            else:
-                our_url = 'https://twitter.com/'+str(json_line['user']['screen_name'])+'/status/'+str(json_line['id'])
-
-            ht_list = ''
-            for element in json_line['entities']['hashtags']:
-                ht_list += ' '+element['text']
-
-            
-            our_str = str(our_docid) + ' | ' + str(json_line['id']) + ' | ' + preprocessing(json_line['full_text'],word_dist) + ' | ' + str(json_line['created_at']) + ' | ' + ht_list + ' | ' + str(json_line['favorite_count']) + ' | ' + str(json_line['retweet_count']) + ' | ' + our_url
-            list_of_tweets.append(our_str)
-
-    # print(word_dist.keys())
-    #print(len(list_of_tweets[1][2]))
-
-    '''for i in range(10):
-        print(list_of_tweets[i+30]+'\n')'''
     
-    '''DE MOMENT FALTA FER LO DE tweet_document_ids_map QUE NO ENTENEM COM FER MAP (QUÈ SON ELS DOCUMENTS EN AQUEST CAS ?)'''
-
-    #font_path = '/path/to/your/truetype/font.ttf'
-
-    #WORDCLOUD
+def word_cloud(word_dist):
+    """
+    Creates a word cloud visualization based on a dictionary of word frequency distribution. 
+    The word cloud displays words with sizes relative to their frequencies in the input data.
+    """
     wordcloud = WordCloud(width = 800, height = 800,
             background_color ='white').generate(' '.join(word_dist.keys()))
     plt.figure(figsize = (8, 8), facecolor = None)
@@ -181,10 +208,14 @@ def main():
     plt.tight_layout(pad = 0)
     plt.savefig('./results/wordcloud.jpg')
     plt.close()
-
-
+    
+def text_length_distribution(list_of_tweets):
+    """
+    Plots a histogram representing the distribution of text lengths in a list of tweets. 
+    The function counts the number of words in each tweet and generates a histogram to 
+    show the frequency of various text lengths.
+    """
     #LENGTH DISTRIBUTION
-
     text_lengths = []
 
     for tweet in list_of_tweets:
@@ -202,38 +233,49 @@ def main():
     plt.ylabel('Frequency')
     plt.title('Distribution of Full Text Lengths')
 
-    # Display the plot 
+    # Save the plot 
     plt.savefig('./results/full_length_distribution.jpg')
     plt.close()
-
-    #VOCABULARY SIZE (unique words):
-
+    
+            
+def main():
+    docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
+    dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+    
+    # Initialize dictionary for word count
+    word_dist = FreqDist()
+    list_of_tweets= []
+    docid_tweetid = csv_to_dict(dict_path)
     total_count = 0
+    with open(docs_path) as fp:
+        for i, line in enumerate(fp):
+            json_line = json.loads(line)
+            our_docid = docid_tweetid[str(json_line['id'])]
+            our_str = get_fields(json_line,our_docid,word_dist)
+            total_count = update_count(our_str,total_count)
+            list_of_tweets.append(our_str)
 
-    for tweet in list_of_tweets:
-        #get the second element -> tweet text
-        full_text = tweet.split('|')[2].strip()
-        words = full_text.split()
-        total_count+= len(words)
 
+
+    #WORDCLOUD
+    word_cloud(word_dist)
+
+    #LENGTH DISTRIBUTION
+    text_length_distribution(list_of_tweets)
+    
+    #TEMPORAL ANALYSIS
+    temporal_plot(list_of_tweets)
+    
+    #VOCABULARY SIZE AND TOTAL SIZE:
     print('\nNUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
     print('NUMBER OF TOTAL WORDS:', total_count)  
 
-    #RANKING OF MOST RETWEETED TWEETS
-    def get_retweet_count(tweet):
-        tweet_parts = tweet.split('|')
-        retweet_count = int(tweet_parts[6].strip())  # Assuming retweet_count is the second-to-last field
-        return retweet_count
-
-    # Sort the list of tweets based on retweet count in descending order (highest retweet count first)
+    #RANK MOST RETWEETED TWEETS
     sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
     print('\n- Top 5 most retweeted tweets:')
     print(sorted_tweets[:5])
 
-    #TEMPORAL ANALYSIS
-    
-    temporal(list_of_tweets)
-
+   
 
 if __name__ == '__main__':
     main()
