@@ -30,7 +30,17 @@ The project relies on the following Python libraries:
 <br></br>
 
 ## Results 
-![alt text](./results/img.png)
+
+### WORD CLOUD
+![alt text](results/wordcloud.jpg)
+### TWEET LENGTH DISTRIBUTION
+![alt text](results/full_length_distribution.jpg)
+
+### TEMPORAL ANALYSIS
+![alt text](results/temporalPlot.jpg)
+
+
+
 
 ## Authors
 - Núria Codina 
