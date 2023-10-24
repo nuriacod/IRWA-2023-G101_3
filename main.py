@@ -353,6 +353,10 @@ def create_index_tfidf(lines, num_documents):
     return index, tf, df, idf
 
 def rank_documents(terms, docs, index, idf, tf):
+    # print('INSIDE RANK_DOCUMENTS')
+    # print('TF', tf)
+    # print('IDF', idf)
+
     """
     Perform the ranking of the results of a search based on the tf-idf weights
 
@@ -406,7 +410,7 @@ def rank_documents(terms, docs, index, idf, tf):
 
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
     print('DOC SCORES', doc_scores)
-    
+
     doc_scores.sort(reverse=True)
     result_docs = [x[1] for x in doc_scores]
 
@@ -418,7 +422,7 @@ def rank_documents(terms, docs, index, idf, tf):
 
 
 
-def search_tf_idf(query, inv_idx, idf, tf):
+def search_tf_idf(query, inv_idx):
     """
     output is the list of documents that contain any of the query terms.
     So, we will get the list of documents for each query term, and take the union of them.
@@ -494,9 +498,10 @@ def main():
     num_documents = len(list_of_tweets)
     global tf, idf
     tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
+    # print('tf', tf, 'idf', idf)
 
     query = 'russia war'
-    ranked_docs = search_tf_idf(query, tf_idf_index, idf, tf)
+    ranked_docs = search_tf_idf(query, tf_idf_index)
     top = 10
 
 
