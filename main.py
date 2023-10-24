@@ -163,117 +163,6 @@ def update_count(tweet,total_count):
 
 
 
-def temporal_plot(list_of_tweets):
-    """
-    Description: Generates a temporal plot of tweet activity over time based on a list of tweets. 
-    The function parses the creation dates of tweets, counts the tweets per day, and 
-    visualizes the temporal distribution in a line plot.
-    """
-
-    # Tweet counts per day
-    tweet_counts = {}
-
-    for tweet in list_of_tweets:
-        # Get timeStamp field and convert to date type 
-        created_at = tweet.split('|')[3].strip()
-        created_at = datetime.datetime.strptime(created_at, '%a %b %d %H:%M:%S +0000 %Y')
-        date = created_at.date()
-        
-        # Update the tweet count
-        tweet_counts[date] = tweet_counts.get(date, 0) + 1
-
-    # Sort the dictionary by date
-    sorted_tweet_counts = sorted(tweet_counts.items())
-
-    # Extract the dates and corresponding tweet counts
-    dates, counts = zip(*sorted_tweet_counts)
-
-    # Create a line plot to visualize tweet activity over time
-    plt.figure(figsize=(10, 6))
-    plt.plot(dates, counts, marker='o')
-    plt.title('Temporal Distribution of Tweets')
-    plt.xlabel('Date')
-    plt.ylabel('Number of Tweets')
-    plt.grid()
-    plt.savefig('./results/temporalPlot.jpg')
-    plt.close()
-    
-def word_cloud(word_dist):
-    """
-    Creates a word cloud visualization based on a dictionary of word frequency distribution. 
-    The word cloud displays words with sizes relative to their frequencies in the input data.
-    """
-    wordcloud = WordCloud(width = 800, height = 800,
-            background_color ='white').generate(' '.join(word_dist.keys()))
-    plt.figure(figsize = (8, 8), facecolor = None)
-    plt.imshow(wordcloud)
-    plt.axis("off")
-    plt.tight_layout(pad = 0)
-    plt.savefig('./results/wordcloud.jpg')
-    plt.close()
-    
-def text_length_distribution(list_of_tweets):
-    """
-    Plots a histogram representing the distribution of text lengths in a list of tweets. 
-    The function counts the number of words in each tweet and generates a histogram to 
-    show the frequency of various text lengths.
-    """
-    #LENGTH DISTRIBUTION
-    text_lengths = []
-
-    for tweet in list_of_tweets:
-        #get the second element -> tweet text
-        full_text = tweet.split('|')[2].strip()
-        words = full_text.split()
-        # Append the word count to the word_counts array
-        text_lengths.append(len(words))
-
-    # Create a histogram plot
-    plt.hist(text_lengths, bins=20, edgecolor='black')
-
-    # Set labels and title
-    plt.xlabel('Text Length')
-    plt.ylabel('Frequency')
-    plt.title('Distribution of Full Text Lengths')
-
-    # Save the plot 
-    plt.savefig('./results/full_length_distribution.jpg')
-    plt.close()
-
-def create_inverted_index(list_of_tweets):
-
-    inv_idx = defaultdict(list)
-    
-
-    for tweet in list_of_tweets:
-        tweet_arr = tweet.split("|") # we get the fields of each tweet
-        doc_id = tweet_arr[0] # doc_xxxx
-        tweet_text = tweet_arr[2].split(" ")
-        tweet_text = [word for word in tweet_text if word != ""]
-        
-        current_page_index = {}
-
-        for position, term in enumerate(tweet_text):
-            try:
-                # if the term is already in the index for the current page (current_page_index)
-                # append the position to the corresponding list
-
-        ## START CODE
-                current_page_index[term][1].append(position)
-            except:
-                # Add the new term as dict key and initialize the array of positions and add the position
-                current_page_index[term]=[doc_id, array('I',[position])] #'I' indicates unsigned int (int in Python)
-
-        #merge the current page index with the main index
-
-
-        for term_page, posting_page in current_page_index.items():
-            inv_idx[term_page].append(posting_page)
-
-        ## END CODE
-
-    return inv_idx
-
 def create_index_tfidf(lines, num_documents):
     """
     Implement the inverted index and compute tf, df and idf
@@ -291,32 +180,26 @@ def create_index_tfidf(lines, num_documents):
     """
 
     index = defaultdict(list)
-    tf = defaultdict(list)  # term frequencies of terms in documents (documents in the same order as in the main index)
-    df = defaultdict(int)  # document frequencies of terms in the corpus
+    # Term frequencies of terms in documents (documents in the same order as in the main index)
+    tf = defaultdict(list)  
+    # Document frequencies of terms in the corpus
+    df = defaultdict(int)  
     idf = defaultdict(float)
 
     for tweet in lines:
-        tweet_arr = tweet.split("|") # we get the fields of each tweet
-        doc_id = tweet_arr[0] # doc_xxxx
+        # we get the fields of each tweet
+        tweet_arr = tweet.split("|") 
+        # doc_xxxx
+        doc_id = tweet_arr[0]
         tweet_text = tweet_arr[2].split(" ")
         tweet_text = [word for word in tweet_text if word != ""]
 
-        ## ===============================================================
         ## create the index for the *current page* and store it in current_page_index
-        ## current_page_index ==> { ‘term1’: [current_doc, [list of positions]], ...,‘term_n’: [current_doc, [list of positions]]}
 
-        ## Example: if the curr_doc has id 1 and his text is
-        ##"web retrieval information retrieval":
-
-        ## current_page_index ==> { ‘web’: [1, [0]], ‘retrieval’: [1, [1,4]], ‘information’: [1, [2]]}
-
-        ## the term ‘web’ appears in document 1 in positions 0,
-        ## the term ‘retrieval’ appears in document 1 in positions 1 and 4
-        ## ===============================================================
 
         current_page_index = {}
 
-        for position, term in enumerate(tweet_text):  ## terms contains page_title + page_text
+        for position, term in enumerate(tweet_text):  
             try:
                 # if the term is already in the dict append the position to the corresponding list
                 current_page_index[term][1].append(position)
@@ -353,10 +236,6 @@ def create_index_tfidf(lines, num_documents):
     return index, tf, df, idf
 
 def rank_documents(terms, docs, index, idf, tf):
-    # print('INSIDE RANK_DOCUMENTS')
-    # print('TF', tf)
-    # print('IDF', idf)
-
     """
     Perform the ranking of the results of a search based on the tf-idf weights
 
@@ -374,23 +253,21 @@ def rank_documents(terms, docs, index, idf, tf):
     # I'm interested only on the element of the docVector corresponding to the query terms
     # The remaining elements would became 0 when multiplied to the query_vector
     doc_vectors = defaultdict(lambda: [0] * len(terms))
-    # I call doc_vectors[k] for a nonexistent key k, the key-value pair (k,[0]*len(terms)) will be automatically added to the dictionary
+    # I call doc_vectors[k] for a nonexistent key k, the key-value pair (k,[0]*len(terms)) will be automatically 
+    # added to the dictionary
     query_vector = [0] * len(terms)
 
     # compute the norm for the query tf
     query_terms_count = collections.Counter(terms)  # get the frequency of each term in the query.
     # Example: collections.Counter(["hello","hello","world"]) --> Counter({'hello': 2, 'world': 1})
     # HINT: use when computing tf for query_vector
-
     query_norm = la.norm(list(query_terms_count.values()))
-
     for termIndex, term in enumerate(terms):  #termIndex is the index of the term in the query
         if term not in index:
             continue
 
         ## Compute tf*idf(normalize TF as done with documents)
         query_vector[termIndex]=query_terms_count[term]/query_norm * idf[term]
-
         # Generate doc_vectors for matching docs
         for doc_index, (doc, postings) in enumerate(index[term]):
             # Example of [doc_index, (doc, postings)]
@@ -409,7 +286,6 @@ def rank_documents(terms, docs, index, idf, tf):
     # see np.dot
 
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
-    print('DOC SCORES', doc_scores)
 
     doc_scores.sort(reverse=True)
     result_docs = [x[1] for x in doc_scores]
@@ -430,7 +306,9 @@ def search_tf_idf(query, inv_idx):
     if 'and' in query: conj = 1
     else: conj = 0
 
+        
     query = preprocessing(query, {}, False)
+    query=query.split()
     docs = set()
     for term in query:
         try:
@@ -481,37 +359,28 @@ def main():
     # temporal_plot(list_of_tweets)
     
     #VOCABULARY SIZE AND TOTAL SIZE:
-    print('\nNUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
-    print('NUMBER OF TOTAL WORDS:', total_count)  
+    #print('\nNUMBER OF UNIQUE WORDS:', len(word_dist.keys()))
+    #print('NUMBER OF TOTAL WORDS:', total_count)  
 
     #RANK MOST RETWEETED TWEETS
-    sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
-    print('\n- Top 5 most retweeted tweets:')
-    print(sorted_tweets[:5])
-
-    inverted = create_inverted_index(list_of_tweets)
-    print("Number of words in 'inverted'",len(inverted.keys()))
-    # print(inverted)
-    # 
-    # print("First 10 Index results for the term 'ukrain': \n{}".format(inverted['ukrain'][:10]))
+    #sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
+    #print('\n- Top 5 most retweeted tweets:')
+    #print(sorted_tweets[:5])
 
     num_documents = len(list_of_tweets)
-    global tf, idf
+    global tf, idf,df
     tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
-    # print('tf', tf, 'idf', idf)
+
 
     query = 'russia war'
     ranked_docs = search_tf_idf(query, tf_idf_index)
     top = 10
 
-
+    
     print("\n======================\nTop {} results out of {} for the searched query:\n".format(top, len(ranked_docs)))
     for d_id in ranked_docs[:top]:
         print("page_id= {}".format(d_id))
-
-
-
-   
+  
 
 if __name__ == '__main__':
     main()
