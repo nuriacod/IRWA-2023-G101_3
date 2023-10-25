@@ -371,37 +371,42 @@ def print_query(doc_id, list_of_tweets):
     id = doc_id.replace('doc_', '')
     text = list_of_tweets[int(id)].split('|')[2]
     print(doc_id, '=>', text, '\n')
+
+def precision_at_k(doc_score, y_score, k=10):
+    """
+    Parameters
+    ----------
+    doc_score: Ground truth (true relevance labels).
+    y_score: Predicted scores.
+    k : number of doc to consider.
+
+    Returns
+    -------
+    precision @k : float
+
+    """
+    order = np.argsort(y_score)[::-1] # [::-1] is the notation for "descending order"
+    doc_score = np.take(doc_score, order[:k]) #y_true # we only consider the top k documents
+    relevant = sum(doc_score==1) # get the number of documents that are relevant
+    return float(relevant/k) # formula for the precision
+
+
+            
+
+
+    
             
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
     dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
-    
-    # Initialize dictionary for word count
-    word_dist = FreqDist()
-    list_of_tweets= []
-    tweet_to_doc = csv_to_dict(dict_path) # key = tweet_id --> value = doc_xxxx
-    total_count = 0
-    with open(docs_path) as fp:
-        for i, line in enumerate(fp):
-            json_line = json.loads(line)
-            our_docid = tweet_to_doc[str(json_line['id'])]
-            our_str = get_fields(json_line,our_docid,word_dist)
-            total_count = update_count(our_str,total_count)
-            list_of_tweets.append(our_str)
+    evaluation_path = './IRWA_data_2023/Evaluation_gt.csv'
+    our_query_path = './IRWA_data_2023/our_query_labels.csv'
+    query_map_path = './IRWA_data_2023/queryId_queryText.csv'
 
-    
-    doc_to_tweet = create_reverse_mapping(tweet_to_doc) # key = doc_xxxx --> value = tweet_id
-    
-    #WORDCLOUD
-    # word_cloud(word_dist)
-
-    #LENGTH DISTRIBUTION
-
-    
-            
-def main():
-    docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
-    dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+    eval_df = pd.read_csv(evaluation_path)
+    our_query_df = pd.read_csv(our_query_path)
+    query_map = csv_to_dict(query_map_path)
+    query_map = {v: k for k, v in query_map.items()}
     
     # Initialize dictionary for word count
     word_dist = FreqDist()
@@ -437,7 +442,7 @@ def main():
     #print('\n- Top 5 most retweeted tweets:')
     #print(sorted_tweets[:5])   
 
-    inverted = create_inverted_index(list_of_tweets)
+    '''inverted = create_inverted_index(list_of_tweets)
     print("Number of words in 'inverted'",len(inverted.keys()))
     # print(inverted)
     # 
@@ -447,10 +452,11 @@ def main():
     # inverted[term][:top]
     print('document_id ==> positions in the document')
     for i in range(top):
-        print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))
+        print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))'''
 
+    print('QUERY MAP ---->', query_map)
     num_documents = len(list_of_tweets)
-    global tf, idf,df
+    global tf, idf,df,tf_idf_index
     print('\nCreating tf-idf index...')
     tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
 
@@ -465,9 +471,27 @@ def main():
     for d_id in ranked_docs[:top]:
         #print("page_id = {}".format(d_id))
         print_query(d_id, list_of_tweets)
-  
+        
+    
+    
+    #TO DO: 
+    # 1) for each query get the documents we need: 
+    # (relevent from all queries and non relevant from specific query) 
+    # 2) Use rank_documents(terms, docs, index, idf, tf): with the docs from step 1  
+    # to get the doc scores of each document 
+    # create a new column in the dataframe that contains the score for the query we have just calculated 
+    # repeat for each query 
+    
+    
+    #tf_idf_index, tf, df, idf = create_index_tfidf(, 90)
+        
+    
+        
+        
+
 
 if __name__ == '__main__':
     main()
+
 
     
