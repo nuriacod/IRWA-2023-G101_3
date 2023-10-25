@@ -367,10 +367,12 @@ def create_reverse_mapping(forward_mapping):
     reverse_mapping = {value: key for key, value in forward_mapping.items()}
     return reverse_mapping
 
-def print_query(doc_id, list_of_tweets):
+def print_query(doc_id):
     id = doc_id.replace('doc_', '')
+    print(id)
     text = list_of_tweets[int(id)].split('|')[2]
-    print(doc_id, '=>', text, '\n')
+    return text
+    #print(doc_id, '=>', text, '\n')
 
 def precision_at_k(doc_score, y_score, k=10):
     """
@@ -410,7 +412,8 @@ def main():
     
     # Initialize dictionary for word count
     word_dist = FreqDist()
-    list_of_tweets= []
+    global list_of_tweets 
+    list_of_tweets = []
     tweet_to_doc = csv_to_dict(dict_path) # key = tweet_id --> value = doc_xxxx
     total_count = 0
     with open(docs_path) as fp:
@@ -470,7 +473,7 @@ def main():
     print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(ranked_docs), query))
     for d_id in ranked_docs[:top]:
         #print("page_id = {}".format(d_id))
-        print_query(d_id, list_of_tweets)
+        print_query(d_id)
         
     
     
@@ -484,8 +487,16 @@ def main():
     
     
     #tf_idf_index, tf, df, idf = create_index_tfidf(, 90)
-        
+
     
+    #our_query_df['tweet'] = our_query_df['doc'].apply(lambda x: print_query(x))  --> NO ACABA DE FUNCIONAR 
+    #print(our_query_df)
+
+    # Create a DataFrame from your list of lists
+    
+
+
+
         
         
 
