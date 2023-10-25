@@ -435,15 +435,7 @@ def main():
     #RANK MOST RETWEETED TWEETS
     #sorted_tweets = sorted(list_of_tweets, key=get_retweet_count, reverse=True)
     #print('\n- Top 5 most retweeted tweets:')
-    #print(sorted_tweets[:5])
-
-    # print text of documents for evaluation
-    with open('doc_list') as fp:
-        for line in fp:
-            print_query(line, list_of_tweets)
-
-    exit()
-    
+    #print(sorted_tweets[:5])   
 
     inverted = create_inverted_index(list_of_tweets)
     print("Number of words in 'inverted'",len(inverted.keys()))
