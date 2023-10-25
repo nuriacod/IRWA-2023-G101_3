@@ -161,6 +161,39 @@ def update_count(tweet,total_count):
     total_count+= len(words)
     return total_count
 
+def create_inverted_index(list_of_tweets):
+
+    inv_idx = defaultdict(list)
+
+
+    for tweet in list_of_tweets:
+        tweet_arr = tweet.split("|") # we get the fields of each tweet
+        doc_id = tweet_arr[0] # doc_xxxx
+        tweet_text = tweet_arr[2].split(" ")
+        tweet_text = [word for word in tweet_text if word != ""]
+
+        current_page_index = {}
+
+        for position, term in enumerate(tweet_text):
+            try:
+                # if the term is already in the index for the current page (current_page_index)
+                # append the position to the corresponding list
+
+        ## START CODE
+                current_page_index[term][1].append(position)
+            except:
+                # Add the new term as dict key and initialize the array of positions and add the position
+                current_page_index[term]=[doc_id, array('I',[position])] #'I' indicates unsigned int (int in Python)
+
+        #merge the current page index with the main index
+
+
+        for term_page, posting_page in current_page_index.items():
+            inv_idx[term_page].append(posting_page)
+
+        ## END CODE
+
+    return inv_idx
 
 
 def create_index_tfidf(lines, num_documents):
@@ -296,17 +329,18 @@ def rank_documents(terms, docs, index, idf, tf):
     #print ('\n'.join(result_docs), '\n')
     return result_docs
 
-
-
 def search_tf_idf(query, inv_idx):
+    
     """
     output is the list of documents that contain any of the query terms.
     So, we will get the list of documents for each query term, and take the union of them.
+    For conjunctive queries (containing the keyword 'AND') we take the intesection so that all words in the query
+    appear in the retrieved documents.
     """
+
     if 'and' in query: conj = 1
     else: conj = 0
 
-        
     query = preprocessing(query, {}, False)
     query=query.split()
     docs = set()
@@ -329,6 +363,40 @@ def search_tf_idf(query, inv_idx):
     ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
     return ranked_docs
 
+def create_reverse_mapping(forward_mapping):
+    reverse_mapping = {value: key for key, value in forward_mapping.items()}
+    return reverse_mapping
+
+def print_query(doc_id, list_of_tweets):
+    id = doc_id.replace('doc_', '')
+    text = list_of_tweets[int(id)].split('|')[2]
+    print(doc_id, '=>', text, '\n')
+            
+def main():
+    docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
+    dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+    
+    # Initialize dictionary for word count
+    word_dist = FreqDist()
+    list_of_tweets= []
+    tweet_to_doc = csv_to_dict(dict_path) # key = tweet_id --> value = doc_xxxx
+    total_count = 0
+    with open(docs_path) as fp:
+        for i, line in enumerate(fp):
+            json_line = json.loads(line)
+            our_docid = tweet_to_doc[str(json_line['id'])]
+            our_str = get_fields(json_line,our_docid,word_dist)
+            total_count = update_count(our_str,total_count)
+            list_of_tweets.append(our_str)
+
+    
+    doc_to_tweet = create_reverse_mapping(tweet_to_doc) # key = doc_xxxx --> value = tweet_id
+    
+    #WORDCLOUD
+    # word_cloud(word_dist)
+
+    #LENGTH DISTRIBUTION
+
     
             
 def main():
@@ -338,17 +406,19 @@ def main():
     # Initialize dictionary for word count
     word_dist = FreqDist()
     list_of_tweets= []
-    docid_tweetid = csv_to_dict(dict_path)
+    tweet_to_doc = csv_to_dict(dict_path) # key = tweet_id --> value = doc_xxxx
     total_count = 0
     with open(docs_path) as fp:
         for i, line in enumerate(fp):
             json_line = json.loads(line)
-            our_docid = docid_tweetid[str(json_line['id'])]
+            our_docid = tweet_to_doc[str(json_line['id'])]
             our_str = get_fields(json_line,our_docid,word_dist)
             total_count = update_count(our_str,total_count)
             list_of_tweets.append(our_str)
 
-
+    
+    doc_to_tweet = create_reverse_mapping(tweet_to_doc) # key = doc_xxxx --> value = tweet_id
+    
     #WORDCLOUD
     # word_cloud(word_dist)
 
@@ -367,19 +437,42 @@ def main():
     #print('\n- Top 5 most retweeted tweets:')
     #print(sorted_tweets[:5])
 
+    # print text of documents for evaluation
+    with open('doc_list') as fp:
+        for line in fp:
+            print_query(line, list_of_tweets)
+
+    exit()
+    
+
+    inverted = create_inverted_index(list_of_tweets)
+    print("Number of words in 'inverted'",len(inverted.keys()))
+    # print(inverted)
+    # 
+    top = 10
+    term = 'ukrain'
+    print("\n======================\nFirst {} Index results for the term 'ukrain':".format(top))
+    # inverted[term][:top]
+    print('document_id ==> positions in the document')
+    for i in range(top):
+        print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))
+
     num_documents = len(list_of_tweets)
     global tf, idf,df
+    print('\nCreating tf-idf index...')
     tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
 
 
-    query = 'russia war'
+    query = 'russian war dictator'
+    print('\nSearching for relevant documents...')
     ranked_docs = search_tf_idf(query, tf_idf_index)
     top = 10
 
     
-    print("\n======================\nTop {} results out of {} for the searched query:\n".format(top, len(ranked_docs)))
+    print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(ranked_docs), query))
     for d_id in ranked_docs[:top]:
-        print("page_id= {}".format(d_id))
+        #print("page_id = {}".format(d_id))
+        print_query(d_id, list_of_tweets)
   
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 # Ignorar carpeta
 IRWA_data_2023
 **/.DS_Store
+.~lock.query_labels.csv#
 
 __pycache__/
