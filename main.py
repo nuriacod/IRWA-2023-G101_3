@@ -283,7 +283,7 @@ def rank_documents(terms, docs, index, idf, tf):
     Print the list of ranked documents
     """
 
-    # I'm interested only on the element of the docVector corresponding to the query terms
+        # I'm interested only on the element of the docVector corresponding to the query terms
     # The remaining elements would became 0 when multiplied to the query_vector
     doc_vectors = defaultdict(lambda: [0] * len(terms))
     # I call doc_vectors[k] for a nonexistent key k, the key-value pair (k,[0]*len(terms)) will be automatically 
@@ -292,9 +292,11 @@ def rank_documents(terms, docs, index, idf, tf):
 
     # compute the norm for the query tf
     query_terms_count = collections.Counter(terms)  # get the frequency of each term in the query.
+
     # Example: collections.Counter(["hello","hello","world"]) --> Counter({'hello': 2, 'world': 1})
     # HINT: use when computing tf for query_vector
     query_norm = la.norm(list(query_terms_count.values()))
+
     for termIndex, term in enumerate(terms):  #termIndex is the index of the term in the query
         if term not in index:
             continue
@@ -363,6 +365,44 @@ def search_tf_idf(query, inv_idx):
     ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
     return ranked_docs
 
+def subset_search_tf_idf(query, inv_idx, subset):
+    """
+    Works in the same fashion as search_tf_idf, but only taking into account the subset of tagged documents for evaluation.
+    """
+
+    if 'and' in query: conj = 1
+    else: conj = 0
+
+    query = preprocessing(query, {}, False)
+    query=query.split()
+    docs = set()
+    for term in query:
+        try:
+            # store in term_docs the ids of the docs that contain "term"
+
+            term_docs=[posting[0] for posting in inv_idx[term]]
+
+            if conj == 1:
+                # intersection --> the documents must contain ALL the words in the query
+                docs = docs & set(term_docs)
+            elif conj == 0:
+                # docs = docs Union term_docs
+                docs = docs.union(set(term_docs))
+        except:
+            #term is not in index
+            pass
+
+    
+    print('length before intersection with subset', len(docs))
+    docs = [element.strip() for element in list(docs)]
+    docs = set(docs).intersection(set(subset)) # only keep those documents that are in the input subset
+
+    print('length AFTER intersection with subset', len(docs))
+
+    docs = list(docs)
+    ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
+    return ranked_docs
+
 def create_reverse_mapping(forward_mapping):
     reverse_mapping = {value: key for key, value in forward_mapping.items()}
     return reverse_mapping
@@ -392,11 +432,17 @@ def precision_at_k(doc_score, y_score, k=10):
     relevant = sum(doc_score==1) # get the number of documents that are relevant
     return float(relevant/k) # formula for the precision
 
-
-            
-
-
+def docids_for_evaluation(query, df):
+    cond_1 = df['our_query_id'] == query
+    cond_2 = df['label'] == 1
+    query_doc_ids = df[(cond_1) | (cond_2)]
+    query_doc_ids_list = query_doc_ids['doc'].tolist()
     
+    # query_doc_ids_list = [item.replace('doc_', '') for item in query_doc_ids_list]
+    
+
+    return query_doc_ids_list
+
             
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
@@ -426,6 +472,7 @@ def main():
 
     
     doc_to_tweet = create_reverse_mapping(tweet_to_doc) # key = doc_xxxx --> value = tweet_id
+
     
     #WORDCLOUD
     # word_cloud(word_dist)
@@ -457,7 +504,7 @@ def main():
     for i in range(top):
         print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))'''
 
-    print('QUERY MAP ---->', query_map)
+    print('\nQUERY MAP ---->', query_map)
     num_documents = len(list_of_tweets)
     global tf, idf,df,tf_idf_index
     print('\nCreating tf-idf index...')
@@ -474,9 +521,21 @@ def main():
     for d_id in ranked_docs[:top]:
         #print("page_id = {}".format(d_id))
         print_query(d_id)
-        
-    
-    
+
+    query = 'Q4'
+    print('Searching docs for {}...'.format(query))
+
+    q_ids = docids_for_evaluation(query, our_query_df) # creating the subset of documents that we have tagged as relevant (or not) in the csv file
+    q_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids)
+    top = 10
+
+    print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(q_ranking), query_map[query]))
+    for d_id in q_ranking[:top]:
+        #print("page_id = {}".format(d_id))
+        print_query(d_id)
+
+
+
     #TO DO: 
     # 1) for each query get the documents we need: 
     # (relevent from all queries and non relevant from specific query) 
@@ -494,12 +553,6 @@ def main():
 
     # Create a DataFrame from your list of lists
     
-
-
-
-        
-        
-
 
 if __name__ == '__main__':
     main()
