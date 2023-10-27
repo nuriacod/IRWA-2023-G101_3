@@ -424,7 +424,7 @@ def docids_for_evaluation(query, df):
 
     return query_doc_ids_list
 
-def precision_at_k(doc_score, y_score, k =10):
+def avg_precision_at_k(doc_score, y_score, k=10):
     """
     Parameters
     ----------
@@ -434,13 +434,64 @@ def precision_at_k(doc_score, y_score, k =10):
 
     Returns
     -------
-    precision @k : float
-
+    average precision @k : float
     """
-    order = np.argsort(y_score)[::-1] # [::-1] is the notation for "descending order"
-    doc_score = np.take(y_score, ) #y_true # we only consider the top k documents
-    relevant = sum(doc_score==1) # get the number of documents that are relevant
-    return float(relevant/k) # formula for the precision
+    print(doc_score)
+    gtp =  sum(doc_score == 1)
+    order = np.argsort(y_score)[::-1]
+    print(order)
+    doc_score = np.take(doc_score,order[:k])
+    print(doc_score)
+    ## if all documents are not relevant
+    if gtp == 0:
+        return 0
+    n_relevant_at_i = 0
+    prec_at_i = 0
+    for i in range(len(doc_score)):
+        if doc_score[i] == 1:
+            n_relevant_at_i += 1
+            prec_at_i += n_relevant_at_i/(i+1)
+    return prec_at_i/gtp
+
+def map_at_k(search_res, k=10):
+    """
+    Parameters
+    ----------
+    search_res: search results dataset containing:
+        query_id: query id.
+        doc_id: document id.
+        predicted_relevance: relevance predicted through LightGBM.
+        doc_score: actual score of the document for the query (ground truth).
+
+    Returns
+    -------
+    mean average precision @ k : float
+    """
+    avp = []
+    for q in search_res['query_id'].unique():  # loop over all query id
+        curr_data = search_res[search_res['query_id']==q]  # select data for current query
+        avp.append(avg_precision_at_k(np.array(curr_data['is_relevant']),np.array(curr_data['predicted_relevance']),k))  #append average precision for current query
+    return sum(avp)/len(avp),avp # return mean average precision
+
+def mrr_at_k(doc_score, y_score, k=10):
+    """
+    Parameters
+    ----------
+    doc_score: Ground truth (true relevance labels).
+    y_score: Predicted scores.
+    k : number of doc to consider.
+
+    Returns
+    -------
+    Reciprocal Rank for qurrent query
+    """
+
+    order = np.argsort(y_score)[::-1]  # get the list of indexes of the predicted score sorted in descending order.
+    doc_score = np.take(doc_score,order[:k]) # sort the actual relevance label of the documents based on predicted score(hint: np.take) and take first k.
+    if sum(doc_score) == 0:  # if there are not relevant doument return 0
+        return 0
+    return 1/(np.argmax(doc_score==1)+1)  # hint: to get the position of the first relevant document use "np.argmax"
+
 
 
             
@@ -524,14 +575,14 @@ def main():
 
     '''
     
-    #iterar sobre els our_query_id unique del our_query_df
+    #iterate over queries in our_query_df
     for query in our_query_df.our_query_id.unique():
         print('Searching docs for {}...'.format(query))
 
         # creating the subset of documents that we have tagged as relevant (or not) in the csv file
         q_ids = docids_for_evaluation(query, our_query_df) 
         q_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids)
-        #print("ranking",q_ranking)
+        # Choose a number of documents: 
         top = 10
 
         print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(q_ranking), query_map[query]))
@@ -543,11 +594,13 @@ def main():
             map_doc_ids[d_id.strip()] = i+1
         print( map_doc_ids)
         doc_ids = [s.strip() for s in doc_ids]
-        our_query_df['predicted'] = our_query_df.apply(lambda row: 1 if row['doc'] in doc_ids else 0, axis=1)
-        our_query_df['order'] = our_query_df.apply(lambda row: map_doc_ids[row['doc']] if row['doc'] in doc_ids else 0, axis=1)
         
-        #dataframe for the query 
-        query_df = our_query_df
+        query_df = our_query_df.copy()
+        
+        query_df['predicted'] = query_df.apply(lambda row: 1 if row['doc'] in doc_ids else 0, axis=1)
+        query_df['order'] = query_df.apply(lambda row: map_doc_ids[row['doc']] if row['doc'] in doc_ids else 0, axis=1)
+        
+     
         print(query_df)  
         
         # PRECISION (P)
