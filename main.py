@@ -296,32 +296,32 @@ def rank_documents(terms, docs, index, idf, tf):
     # Example: collections.Counter(["hello","hello","world"]) --> Counter({'hello': 2, 'world': 1})
     # HINT: use when computing tf for query_vector
     query_norm = la.norm(list(query_terms_count.values()))
+    
+
 
     for termIndex, term in enumerate(terms):  #termIndex is the index of the term in the query
         if term not in index:
             continue
-
         ## Compute tf*idf(normalize TF as done with documents)
         query_vector[termIndex]=query_terms_count[term]/query_norm * idf[term]
         # Generate doc_vectors for matching docs
+        #print("index term",index[term])
+        #print("DOCS",docs)
         for doc_index, (doc, postings) in enumerate(index[term]):
-            # Example of [doc_index, (doc, postings)]
-            # 0 (26, array('I', [1, 4, 12, 15, 22, 28, 32, 43, 51, 68, 333, 337]))
-            # 1 (33, array('I', [26, 33, 57, 71, 87, 104, 109]))
-            # term is in doc 26 in positions 1,4, .....
-            # term is in doc 33 in positions 26,33, .....
-
-            #tf[term][0] will contain the tf of the term "term" in the doc 26
-            if doc in docs:
-                doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]  # TODO: check if multiply for idf
-
+            #print("doc",doc,"in",docs)
+            #print(doc)
+            if doc.strip() in docs:
+                #print("HELOOOOO",doc)
+                doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]  
+                # TODO: check if multiply for idf
+                #print("doc loop",doc_vectors[doc][termIndex])
     # Calculate the score of each doc
     # compute the cosine similarity between queyVector and each docVector:
     # HINT: you can use the dot product because in case of normalized vectors it corresponds to the cosine similarity
     # see np.dot
 
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
-
+    #print("Doc_scores",doc_scores)
     doc_scores.sort(reverse=True)
     result_docs = [x[1] for x in doc_scores]
 
@@ -361,7 +361,6 @@ def search_tf_idf(query, inv_idx):
             #term is not in index
             pass
     docs = list(docs)
-
     ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
     return ranked_docs
 
@@ -392,14 +391,13 @@ def subset_search_tf_idf(query, inv_idx, subset):
             #term is not in index
             pass
 
-    
-    print('length before intersection with subset', len(docs))
     docs = [element.strip() for element in list(docs)]
     docs = set(docs).intersection(set(subset)) # only keep those documents that are in the input subset
 
-    print('length AFTER intersection with subset', len(docs))
-
     docs = list(docs)
+
+    #print("docs",docs)
+
     ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
     return ranked_docs
 
@@ -409,12 +407,24 @@ def create_reverse_mapping(forward_mapping):
 
 def print_query(doc_id):
     id = doc_id.replace('doc_', '')
-    print(id)
     text = list_of_tweets[int(id)].split('|')[2]
-    return text
+    print("{}:{}".format(id,text))
+    return id,text
     #print(doc_id, '=>', text, '\n')
 
-def precision_at_k(doc_score, y_score, k=10):
+
+def docids_for_evaluation(query, df):
+    cond_1 = df['our_query_id'] == query
+    cond_2 = df['label'] == 1
+    query_doc_ids = df[(cond_1) | (cond_2)]
+    query_doc_ids_list = query_doc_ids['doc'].tolist()
+    
+    # query_doc_ids_list = [item.replace('doc_', '') for item in query_doc_ids_list]
+    
+
+    return query_doc_ids_list
+
+def precision_at_k(doc_score, y_score, k =10):
     """
     Parameters
     ----------
@@ -428,20 +438,10 @@ def precision_at_k(doc_score, y_score, k=10):
 
     """
     order = np.argsort(y_score)[::-1] # [::-1] is the notation for "descending order"
-    doc_score = np.take(doc_score, order[:k]) #y_true # we only consider the top k documents
+    doc_score = np.take(y_score, ) #y_true # we only consider the top k documents
     relevant = sum(doc_score==1) # get the number of documents that are relevant
     return float(relevant/k) # formula for the precision
 
-def docids_for_evaluation(query, df):
-    cond_1 = df['our_query_id'] == query
-    cond_2 = df['label'] == 1
-    query_doc_ids = df[(cond_1) | (cond_2)]
-    query_doc_ids_list = query_doc_ids['doc'].tolist()
-    
-    # query_doc_ids_list = [item.replace('doc_', '') for item in query_doc_ids_list]
-    
-
-    return query_doc_ids_list
 
             
 def main():
@@ -492,7 +492,7 @@ def main():
     #print('\n- Top 5 most retweeted tweets:')
     #print(sorted_tweets[:5])   
 
-    '''inverted = create_inverted_index(list_of_tweets)
+    inverted = create_inverted_index(list_of_tweets)
     print("Number of words in 'inverted'",len(inverted.keys()))
     # print(inverted)
     # 
@@ -502,52 +502,67 @@ def main():
     # inverted[term][:top]
     print('document_id ==> positions in the document')
     for i in range(top):
-        print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))'''
-
+        print("{} ==> {}".format(inverted[term][i][0], inverted[term][i][1].tolist()))
+   
+    
     print('\nQUERY MAP ---->', query_map)
     num_documents = len(list_of_tweets)
-    global tf, idf,df,tf_idf_index
+    global tf, idf, df, tf_idf_index
     print('\nCreating tf-idf index...')
     tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
-
-
-    query = 'russian war dictator'
+    
+    '''
+    query = 'russian war dictator'   
     print('\nSearching for relevant documents...')
     ranked_docs = search_tf_idf(query, tf_idf_index)
     top = 10
-
     
     print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(ranked_docs), query))
     for d_id in ranked_docs[:top]:
-        #print("page_id = {}".format(d_id))
+    #print("page_id = {}".format(d_id))
         print_query(d_id)
 
-    query = 'Q4'
-    print('Searching docs for {}...'.format(query))
-
-    q_ids = docids_for_evaluation(query, our_query_df) # creating the subset of documents that we have tagged as relevant (or not) in the csv file
-    q_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids)
-    top = 10
-
-    print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(q_ranking), query_map[query]))
-    for d_id in q_ranking[:top]:
-        #print("page_id = {}".format(d_id))
-        print_query(d_id)
-
-
-
-    #TO DO: 
-    # 1) for each query get the documents we need: 
-    # (relevent from all queries and non relevant from specific query) 
-    # 2) Use rank_documents(terms, docs, index, idf, tf): with the docs from step 1  
-    # to get the doc scores of each document 
-    # create a new column in the dataframe that contains the score for the query we have just calculated 
-    # repeat for each query 
+    '''
     
+    #iterar sobre els our_query_id unique del our_query_df
+    for query in our_query_df.our_query_id.unique():
+        print('Searching docs for {}...'.format(query))
+
+        # creating the subset of documents that we have tagged as relevant (or not) in the csv file
+        q_ids = docids_for_evaluation(query, our_query_df) 
+        q_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids)
+        #print("ranking",q_ranking)
+        top = 10
+
+        print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(q_ranking), query_map[query]))
+        doc_ids =[]
+        map_doc_ids = {}
+        for i, d_id in enumerate(q_ranking[:top]):
+            print_query(d_id)
+            doc_ids.append(d_id)
+            map_doc_ids[d_id.strip()] = i+1
+        print( map_doc_ids)
+        doc_ids = [s.strip() for s in doc_ids]
+        our_query_df['predicted'] = our_query_df.apply(lambda row: 1 if row['doc'] in doc_ids else 0, axis=1)
+        our_query_df['order'] = our_query_df.apply(lambda row: map_doc_ids[row['doc']] if row['doc'] in doc_ids else 0, axis=1)
+        
+        #dataframe for the query 
+        query_df = our_query_df
+        print(query_df)  
+        
+        # PRECISION (P)
+        precision_at_k= query_df[query_df['predicted'] == 1]['label'].sum()/10
+        print("Precision of query {} is:{}".format(query,precision_at_k))
+        
+        # AVERAGE PRECISION (AP)
+    
+        # MEAN AVERAGE PRECISION (mAP)
+        
+        # MEAN RECIPROCAL RANK (MRR)
+            
+ 
     
     #tf_idf_index, tf, df, idf = create_index_tfidf(, 90)
-
-    
     #our_query_df['tweet'] = our_query_df['doc'].apply(lambda x: print_query(x))  --> NO ACABA DE FUNCIONAR 
     #print(our_query_df)
 
