@@ -323,7 +323,7 @@ def rank_documents(terms, docs, index, idf, tf):
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
     #print("Doc_scores",doc_scores)
     doc_scores.sort(reverse=True)
-    print('DOC SCORES -----> ', doc_scores)
+    print('DOC SCORES:\n', doc_scores)
     result_docs = [x[1] for x in doc_scores]
 
     if len(result_docs) == 0:
@@ -470,7 +470,7 @@ def map_at_k(search_res, k=10):
         avp.append(avg_precision_at_k(np.array(curr_data['is_relevant']),np.array(curr_data['predicted_relevance']),k))  #append average precision for current query
     return sum(avp)/len(avp),avp # return mean average precision
 
-def mrr_at_k(doc_score, y_score, k=10):
+def rr_at_k(doc_score, y_score, k=10):
     """
     Parameters
     ----------
@@ -488,7 +488,6 @@ def mrr_at_k(doc_score, y_score, k=10):
     if sum(doc_score) == 0:  # if there are not relevant doument return 0
         return 0
     return 1/(np.argmax(doc_score==1)+1)  # hint: to get the position of the first relevant document use "np.argmax"
-
 
 
             
@@ -573,9 +572,10 @@ def main():
     '''
     
     averages = []
+    rr = []
     #iterate over queries in our_query_df
     for query in our_query_df.our_query_id.unique():
-        print('Searching docs for {}...'.format(query))
+        print('\n***** Searching docs for {}... *****'.format(query))
 
         # creating the subset of documents that we have tagged as relevant (or not) in the csv file
         q_ids = docids_for_evaluation(query, our_query_df) 
@@ -583,14 +583,14 @@ def main():
         # Choose a number of documents: 
         top = 10
 
-        print("\n======================\nTop {} results out of {} for the searched query '{}':\n".format(top, len(q_ranking), query_map[query]))
+        print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(q_ranking), query_map[query]))
         doc_ids =[]
         map_doc_ids = {}
         for i, d_id in enumerate(q_ranking[:top]):
             print_query(d_id)
             doc_ids.append(d_id)
             map_doc_ids[d_id.strip()] = i+1
-        print( map_doc_ids)
+        print('\n',map_doc_ids)
         doc_ids = [s.strip() for s in doc_ids]
         
         query_df = our_query_df.copy()
@@ -601,12 +601,17 @@ def main():
         #print(query_df[query_df["our_query_id"] == query])
         # Create new dataframe that only contains the rows for the current query  
         filtered_df = query_df[query_df['our_query_id'] == query]
-        
+            
         # PRECISION (P)
-        precision_at_k= filtered_df[filtered_df['predicted'] == 1]['label'].sum()/10
-        print("Precision of query {} is:{}".format(query,precision_at_k))
+        precision_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/top
+        print("\n* Precision of query {} is: {}".format(query,precision_at_k))
 
         # RECALL (R)
+        relevant_size = query_df[query_df['predicted'] == 1]['label'].sum()
+        print(relevant_size)
+
+        recall_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/relevant_size # ??
+        print("* Recall of query {} is: {}".format(query,recall_at_k))
         
         # AVERAGE PRECISION (AP)
         # modify dataframe
@@ -616,21 +621,35 @@ def main():
         #adapted_df = query_df.loc[query_df['our_query_id'] != query, 'label'] = 0
         adapted_df = query_df.copy()
 
-        #FALLA AQUESTA LINIA
-        adapted_df['label'] = adapted_df.apply(lambda row: 0 if row['our_query_id'] != query else row['label'])
+        for index, row in adapted_df.iterrows():
+            if row['our_query_id'] != query:
+                adapted_df.at[index, 'label'] = 0
+
+
+        # adapted_df['label'] = 0 if row['our_query_id'] != query else row['label']
+
+        '''print('number of non-zero labels:', adapted_df['label'].sum() )
+        print('number of non-zero "predicted" rows:', adapted_df['predicted'].sum() )'''
+
+        # adapted_df['label'] = adapted_df.apply(lambda row: 0 if row['our_query_id'] != query else row['label'])
         sorted_adapted_df = adapted_df.sort_values(by='order')
 
         average_precision_at_k = avg_precision_at_k(sorted_adapted_df['label'],sorted_adapted_df['predicted'], k=10)
         averages.append(average_precision_at_k)
         
-        print(sorted_adapted_df.head(10)) 
-        print("Average precision of query {} is:{}".format(query, average_precision_at_k))
+        print('---> Sorted adapted df:\n', sorted_adapted_df.tail(10)) 
+        print("Average precision of query {} is: {}".format(query, average_precision_at_k))
 
         # F1 SCORE
     
-
         
-        # MEAN RECIPROCAL RANK (MRR)
+        # RECIPROCAL RANK (later we will compute the avg for all queries to obtain the MRR)
+        ground_truth = sorted_adapted_df['label'].tolist()
+        pred_scores = sorted_adapted_df['predicted'].tolist()
+
+        rec_rank = rr_at_k(ground_truth, pred_scores, k=10)
+        rr.append(rec_rank)
+        print('RR list:', rr)
 
         # NORMALIZED DISCOUNTED CUMULATIVE GAIN 
     
@@ -639,9 +658,11 @@ def main():
     mAP  = sum(averages)/len(averages)
     print("Mean average precision for all queries is:", mAP)
 
-            
+    # MEAN RECIPROCAL RANK (MRR)
+    # Compute the average of the RR for all the queries
+    mrr = sum(rr)/len(rr)
+    print("Mean Reciprocal Rank for all queries:", mrr)
  
-    
     #tf_idf_index, tf, df, idf = create_index_tfidf(, 90)
     #our_query_df['tweet'] = our_query_df['doc'].apply(lambda x: print_query(x))  --> NO ACABA DE FUNCIONAR 
     #print(our_query_df)
