@@ -670,7 +670,7 @@ def main():
     ## 2 DIMENSIONAL REPRESENTATION
     # Create a TF-IDF vectorizer
     tfidf_vectorizer = TfidfVectorizer()
-    tfidf_matrix = tfidf_vectorizer.fit_transform(list_of_tweets)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(list_of_tweets)  #agafar nomes els que hem fet per las queries?
 
     # Apply t-SNE to the TF-IDF matrix
     tsne = TSNE(n_components=2)
