@@ -21,6 +21,10 @@ import nltk
 nltk.download('stopwords')
 
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.manifold import TSNE
+
+
 def rep(m):
     """
     Description: Splits a hashtag into a list of words based on capitalization.
@@ -321,9 +325,7 @@ def rank_documents(terms, docs, index, idf, tf):
     # see np.dot
 
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
-    #print("Doc_scores",doc_scores)
     doc_scores.sort(reverse=True)
-    print('DOC SCORES:\n', doc_scores)
     result_docs = [x[1] for x in doc_scores]
 
     if len(result_docs) == 0:
@@ -573,7 +575,7 @@ def main():
     
     averages = []
     rr = []
-    #iterate over queries in our_query_df
+    #iterate over queries in our_query_df for evaluation
     for query in our_query_df.our_query_id.unique():
         print('\n***** Searching docs for {}... *****'.format(query))
 
@@ -608,8 +610,6 @@ def main():
 
         # RECALL (R)
         relevant_size = query_df[query_df['predicted'] == 1]['label'].sum()
-        print(relevant_size)
-
         recall_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/relevant_size # ??
         print("* Recall of query {} is: {}".format(query,recall_at_k))
         
@@ -641,7 +641,8 @@ def main():
         print("Average precision of query {} is: {}".format(query, average_precision_at_k))
 
         # F1 SCORE
-    
+        f1_score = 2 * (precision_at_k * recall_at_k) / (precision_at_k + recall_at_k)
+        print("F1 score of query {} is: {}".format(query,f1_score))
         
         # RECIPROCAL RANK (later we will compute the avg for all queries to obtain the MRR)
         ground_truth = sorted_adapted_df['label'].tolist()
@@ -652,6 +653,7 @@ def main():
         print('RR list:', rr)
 
         # NORMALIZED DISCOUNTED CUMULATIVE GAIN 
+        
     
     # MEAN AVERAGE PRECISION (mAP)
     #is outside the loop because it is a metric for all the queries
@@ -662,12 +664,22 @@ def main():
     # Compute the average of the RR for all the queries
     mrr = sum(rr)/len(rr)
     print("Mean Reciprocal Rank for all queries:", mrr)
- 
-    #tf_idf_index, tf, df, idf = create_index_tfidf(, 90)
-    #our_query_df['tweet'] = our_query_df['doc'].apply(lambda x: print_query(x))  --> NO ACABA DE FUNCIONAR 
-    #print(our_query_df)
+    
+    
+    
+    ## 2 DIMENSIONAL REPRESENTATION
+    # Create a TF-IDF vectorizer
+    tfidf_vectorizer = TfidfVectorizer()
+    tfidf_matrix = tfidf_vectorizer.fit_transform(list_of_tweets)
 
-    # Create a DataFrame from your list of lists
+    # Apply t-SNE to the TF-IDF matrix
+    tsne = TSNE(n_components=2)
+    X_tsne = tsne.fit_transform(tfidf_matrix.toarray())
+
+    # Plot the t-SNE representation
+    plt.scatter(X_tsne[:, 0], X_tsne[:, 1])
+    plt.show()
+
     
 
 if __name__ == '__main__':
