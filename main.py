@@ -68,8 +68,8 @@ def print_query(doc_id):
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
     dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
-    our_query_path = './IRWA_data_2023/our_query_labels.csv'
-    query_map_path = './IRWA_data_2023/queryId_queryText.csv'
+    our_query_path = './queries/our_query_labels.csv'
+    query_map_path = './queries/queryId_queryText.csv'
 
     our_query_df = pd.read_csv(our_query_path)
     query_map = csv_to_dict(query_map_path)
