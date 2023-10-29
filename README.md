@@ -14,11 +14,16 @@ pip install nltk wordcloud matplotlib pandas numpy scikit-learn
 The primary functionality is implemented in the main() function within main.py.
 
 
-To run the project, execute the following command:
+To run the project, execute the following command in python 3 environment:
 
 ```bash
 python3 main.py
 ```
+or 
+```bash
+python main.py
+```
+depending on your OS 
 
 ## Dependencies 
 The project relies on the following Python libraries:
