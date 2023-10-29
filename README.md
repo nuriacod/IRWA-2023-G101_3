@@ -7,7 +7,7 @@ This project focuses on performing Natural Language Processing (NLP) on Twitter 
 Before running the code, make sure you have the required Python libraries installed. You can install them using pip:
 
 ```bash
-pip install nltk wordcloud matplotlib pandas numpy 
+pip install nltk wordcloud matplotlib pandas numpy scikit-learn
 ```
 ## Usage
 ### Main Script: 
@@ -27,6 +27,7 @@ The project relies on the following Python libraries:
 - Matplotlib
 - Pandas
 - NumPy
+- Sklearn
 <br></br>
 
 ## Results 
@@ -42,11 +43,12 @@ The project relies on the following Python libraries:
 ### TEMPORAL ANALYSIS
 <img src="results/temporalPlot.jpg" alt="alt text" width="400" height="300">
 
-
+### TSNE PLOT
+<img src="results/tsne_plot.png" alt="alt text" width="400" height="300">
 
 
 
 ## Authors
 - Núria Codina 
 - Maria Guasch 
-- MArtina Gómez 
+- Martina Gómez 
