@@ -95,7 +95,7 @@ def rr_at_k(doc_score, y_score, k=10):
     #doc_score = np.take(doc_score,order[:k]) # sort the actual relevance label of the documents based on predicted score(hint: np.take) and take first k.
     if sum(doc_score) == 0:  # if there are not relevant doument return 0
         return 0
-    return 1/(np.argmax(doc_score==1)+1)  # hint: to get the position of the first relevant document use "np.argmax"
+    return 1/(np.argmax(doc_score)+1)  # hint: to get the position of the first relevant document use "np.argmax"
 
 def dcg_at_k(doc_score, y_score, k=10):
     """
