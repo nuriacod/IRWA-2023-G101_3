@@ -60,7 +60,7 @@ def print_query(doc_id):
     """
     
     id = int(doc_id.replace('doc_', ''))
-    text = tweet_fulltext[id]
+    text = tweet_fulltext[id-1]
     print("{}:{}".format(id,text))
     return id,text
 
