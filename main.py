@@ -144,8 +144,9 @@ def get_fields(line,doc_id,word_dist):
     our_str = str(doc_id) + ' | ' + str(line['id']) + ' | ' + preprocessing(line['full_text'],word_dist, True)+ ' | ' + \
             str(line['created_at']) + ' | ' + ht_list + ' | ' + str(line['favorite_count']) + ' | ' + \
             str(line['retweet_count']) + ' | ' + our_url
-            
-    return our_str
+    
+    text = line['full_text']
+    return our_str, text
     
 def get_retweet_count(tweet):
     """
@@ -410,7 +411,7 @@ def create_reverse_mapping(forward_mapping):
 
 def print_query(doc_id):
     id = doc_id.replace('doc_', '')
-    text = list_of_tweets[int(id)].split('|')[2]
+    text = tweet_fulltext[int(id)]
     print("{}:{}".format(id,text))
     return id,text
     #print(doc_id, '=>', text, '\n')
@@ -421,9 +422,7 @@ def docids_for_evaluation(query, df):
     cond_2 = df['label'] == 1
     query_doc_ids = df[(cond_1) | (cond_2)]
     query_doc_ids_list = query_doc_ids['doc'].tolist()
-    
-    # query_doc_ids_list = [item.replace('doc_', '') for item in query_doc_ids_list]
-    
+        
 
     return query_doc_ids_list
 
@@ -439,15 +438,19 @@ def avg_precision_at_k(doc_score, y_score, k=10):
     -------
     average precision @k : float
     """
-    gtp =  sum(doc_score == 1)
+    gtp = np.sum(doc_score) # number of Ground Truth Positives --> relevant documents
+    #order = np.argsort(y_score)[::-1]
+    #doc_score = np.take(doc_score, order[:k])
     
     ## if all documents are not relevant
     if gtp == 0:
         return 0
     n_relevant_at_i = 0
     prec_at_i = 0
+
     for i in range(len(doc_score)):
         if doc_score[i] == 1:
+        
             n_relevant_at_i += 1
             prec_at_i += n_relevant_at_i/(i+1)
     return prec_at_i/gtp
@@ -485,13 +488,24 @@ def rr_at_k(doc_score, y_score, k=10):
     Reciprocal Rank for qurrent query
     """
 
-    order = np.argsort(y_score)[::-1]  # get the list of indexes of the predicted score sorted in descending order.
-    doc_score = np.take(doc_score,order[:k]) # sort the actual relevance label of the documents based on predicted score(hint: np.take) and take first k.
+    #order = np.argsort(y_score)[::-1]  # get the list of indexes of the predicted score sorted in descending order.
+    #doc_score = np.take(doc_score,order[:k]) # sort the actual relevance label of the documents based on predicted score(hint: np.take) and take first k.
     if sum(doc_score) == 0:  # if there are not relevant doument return 0
         return 0
     return 1/(np.argmax(doc_score==1)+1)  # hint: to get the position of the first relevant document use "np.argmax"
 
+def dcg_at_k(doc_score, y_score, k=10):
+    order = np.argsort(y_score)[::-1]  # get the list of indexes of the predicted score sorted in descending order.
+    doc_score = np.take(doc_score, order[:k])  # sort the actual relevance label of the documents based on predicted score(hint: np.take) and take first k.
+    gain = 2** doc_score-1  # Compute gain (use formula 7 above)
+    discounts = np.log2(np.arange(len(doc_score)) + 2)  # Compute denominator
+    return np.sum(gain / discounts)  #return dcg@k
 
+def ndcg_at_k(doc_score, y_score, k=10):
+    dcg_max = dcg_at_k(doc_score, doc_score, k) # Ideal dcg
+    if not dcg_max:
+        return 0
+    return np.round(dcg_at_k(doc_score, y_score, k)/dcg_max, 4) # return ndcg@k
             
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
@@ -507,22 +521,24 @@ def main():
     
     # Initialize dictionary for word count
     word_dist = FreqDist()
-    global list_of_tweets 
+    global list_of_tweets, tweet_fulltext
     list_of_tweets = []
+    tweet_fulltext = []
+
     tweet_to_doc = csv_to_dict(dict_path) # key = tweet_id --> value = doc_xxxx
     total_count = 0
     with open(docs_path) as fp:
         for i, line in enumerate(fp):
             json_line = json.loads(line)
             our_docid = tweet_to_doc[str(json_line['id'])]
-            our_str = get_fields(json_line,our_docid,word_dist)
+            our_str, aux_text = get_fields(json_line,our_docid,word_dist)
             total_count = update_count(our_str,total_count)
             list_of_tweets.append(our_str)
+            tweet_fulltext.append(aux_text)
 
     
     doc_to_tweet = create_reverse_mapping(tweet_to_doc) # key = doc_xxxx --> value = tweet_id
 
-    
     #WORDCLOUD
     # word_cloud(word_dist)
 
@@ -602,29 +618,40 @@ def main():
         
         #print(query_df[query_df["our_query_id"] == query])
         # Create new dataframe that only contains the rows for the current query  
-        filtered_df = query_df[query_df['our_query_id'] == query]
-            
-        # PRECISION (P)
-        precision_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/top
-        print("\n* Precision of query {} is: {}".format(query,precision_at_k))
+        #filtered_df = query_df[query_df['our_query_id'] == query]
+        #print(filtered_df)
 
-        # RECALL (R)
-        relevant_size = query_df[query_df['predicted'] == 1]['label'].sum()
-        recall_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/relevant_size # ??
-        print("* Recall of query {} is: {}".format(query,recall_at_k))
+        #query_x_df = query_df[query_df['doc'].isin(q_ids)]
+
+        # print('query_x_df\n', query_x_df)
         
-        # AVERAGE PRECISION (AP)
-        # modify dataframe
-        # 1. all labels that are not from the current query -> set to 0
-        # 2. order by column order
+        # Create new dataframe that only contains the rows for the current query QX 
+        #filtered_df = query_df[query_df['our_query_id'] == query]
         
-        #adapted_df = query_df.loc[query_df['our_query_id'] != query, 'label'] = 0
         adapted_df = query_df.copy()
 
         for index, row in adapted_df.iterrows():
             if row['our_query_id'] != query:
                 adapted_df.at[index, 'label'] = 0
 
+        # PRECISION (P)
+        precision_at_k = adapted_df[adapted_df ['predicted'] == 1]['label'].sum()/top
+        print("\n* Precision of query {} is: {}".format(query,precision_at_k))
+
+        # RECALL (R)
+        TP = adapted_df[adapted_df ['predicted'] == 1]['label'].sum()
+        FN = adapted_df[(adapted_df['label'] == 1) & (adapted_df['predicted'] == 0)]['label'].count()
+        
+        #relevant_size = query_df[query_df['predicted'] == 1]['label'].sum()
+        #recall_at_k = filtered_df[filtered_df['predicted'] == 1]['label'].sum()/relevant_size # ??
+        
+        recall_at_k = TP/(TP+FN)
+        print("* Recall of query {} is: {}".format(query,recall_at_k))
+        
+        # AVERAGE PRECISION (AP)
+        # modify dataframe
+        # 1. all labels that are not from the current query -> set to 0
+        # 2. order by column order
 
         # adapted_df['label'] = 0 if row['our_query_id'] != query else row['label']
 
@@ -634,10 +661,15 @@ def main():
         # adapted_df['label'] = adapted_df.apply(lambda row: 0 if row['our_query_id'] != query else row['label'])
         sorted_adapted_df = adapted_df.sort_values(by='order')
 
-        average_precision_at_k = avg_precision_at_k(sorted_adapted_df['label'],sorted_adapted_df['predicted'], k=10)
-        averages.append(average_precision_at_k)
+
+        ordered_df = sorted_adapted_df.copy()
+        ordered_df = ordered_df[ordered_df['order'] != 0]
+
+        average_precision_at_k = avg_precision_at_k(ordered_df['label'].tolist(),ordered_df['predicted'].tolist(), k=10)
+        if query not in ['Q1', 'Q2', 'Q3']:
+            averages.append(average_precision_at_k)
         
-        print('---> Sorted adapted df:\n', sorted_adapted_df.tail(10)) 
+    
         print("Average precision of query {} is: {}".format(query, average_precision_at_k))
 
         # F1 SCORE
@@ -645,16 +677,17 @@ def main():
         print("F1 score of query {} is: {}".format(query,f1_score))
         
         # RECIPROCAL RANK (later we will compute the avg for all queries to obtain the MRR)
-        ground_truth = sorted_adapted_df['label'].tolist()
-        pred_scores = sorted_adapted_df['predicted'].tolist()
+        ground_truth = ordered_df['label'].tolist()
+        pred_scores = ordered_df['predicted'].tolist()
 
         rec_rank = rr_at_k(ground_truth, pred_scores, k=10)
-        rr.append(rec_rank)
-        print('RR list:', rr)
+        if query not in ['Q1', 'Q2', 'Q3']:
+            rr.append(rec_rank)
 
         # NORMALIZED DISCOUNTED CUMULATIVE GAIN 
-        
-    
+        ndcg_atk = np.round(ndcg_at_k(sorted_adapted_df['label'], sorted_adapted_df['predicted'], k=10), 4)
+        print('Normalized Discounted Cumulative Gain:', ndcg_atk )
+
     # MEAN AVERAGE PRECISION (mAP)
     #is outside the loop because it is a metric for all the queries
     mAP  = sum(averages)/len(averages)
@@ -665,12 +698,20 @@ def main():
     mrr = sum(rr)/len(rr)
     print("Mean Reciprocal Rank for all queries:", mrr)
     
-    
-    
     ## 2 DIMENSIONAL REPRESENTATION
     # Create a TF-IDF vectorizer
+
+    doc_ids = our_query_df['doc'].tolist() # doc ids from evaluation subset
+    processed_texts = []
+
+    for t in list_of_tweets:
+        if t.split('|')[0].strip() in doc_ids:
+            text = t.split('|')[2].strip()
+            processed_texts.append(text)
+
+
     tfidf_vectorizer = TfidfVectorizer()
-    tfidf_matrix = tfidf_vectorizer.fit_transform(list_of_tweets)  #agafar nomes els que hem fet per las queries?
+    tfidf_matrix = tfidf_vectorizer.fit_transform(processed_texts)
 
     # Apply t-SNE to the TF-IDF matrix
     tsne = TSNE(n_components=2)
