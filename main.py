@@ -10,12 +10,19 @@ import csv
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import TSNE
 
+from gensim.models import Word2Vec
+from nltk.tokenize import word_tokenize
+
+import nltk
+nltk.download('punkt')
+
 from evaluation import avg_precision_at_k, map_at_k, rr_at_k, dcg_at_k, ndcg_at_k, docids_for_evaluation
 from modeling_indexing import create_inverted_index, create_index_tfidf, rank_documents, search_tf_idf,subset_search_tf_idf
 from preprocessing import preprocessing, get_fields
 from plots_data_analytics import temporal_plot, word_cloud, text_length_distribution
 
-
+def striplist(l):
+    return([x.strip() for x in l])
 
 
 def csv_to_dict(filepath):
@@ -52,8 +59,6 @@ def update_count(tweet,total_count):
     total_count+= len(words)
     return total_count
 
- 
-
 def print_query(doc_id):
     """
     Given a doc id returns the id as an int an the corresponding doc text (tweet)
@@ -63,8 +68,7 @@ def print_query(doc_id):
     text = tweet_fulltext[id-1]
     print("{}:{}".format(id,text))
     return id,text
-
-            
+          
 def main():
     docs_path = './IRWA_data_2023/Rus_Ukr_war_data.json'
     dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
@@ -144,18 +148,21 @@ def main():
         q_ids = docids_for_evaluation(query, our_query_df) 
         q_ranking,our_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids,idf,tf,our_score)
 
+        print('OUR RANKING:\n', striplist(our_ranking))
+
         # Chosen number of documents: 
         top = 10
 
         #print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(q_ranking), query_map[query]))
         print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(our_ranking), query_map[query]))
-        
+
         #COMMENT ALL THIS BECAUSE IT IS THE EVALUATION PART (we just want the ranking now)
-    '''     
-    doc_ids =[]
+        # descomentat perq necessit list_of_tweets
+
+        doc_ids =[]
         map_doc_ids = {}
         list_of_tweets = []
-        # Iterate over the top 10 mos relevant documents for each query
+        # Iterate over the top 10 most relevant documents for each query
         for i, d_id in enumerate(q_ranking[:top]):
             _,tweet = print_query(d_id)
             list_of_tweets.append(tweet)
@@ -182,7 +189,7 @@ def main():
 
         # PRECISION (P)
         precision_at_k = adapted_df[adapted_df ['predicted'] == 1]['label'].sum()/top
-        print("\n* Precision of query {} is: {}".format(query,precision_at_k))
+        #print("\n* Precision of query {} is: {}".format(query,precision_at_k))
 
         # RECALL (R)
         TP = adapted_df[adapted_df ['predicted'] == 1]['label'].sum()
@@ -190,7 +197,7 @@ def main():
         
         
         recall_at_k = TP/(TP+FN)
-        print("* Recall of query {} is: {}".format(query,recall_at_k))
+        #print("* Recall of query {} is: {}".format(query,recall_at_k))
         
         # AVERAGE PRECISION (AP)
         sorted_adapted_df = adapted_df.sort_values(by='order')
@@ -203,11 +210,11 @@ def main():
             averages.append(average_precision_at_k)
         
     
-        print("Average precision of query {} is: {}".format(query, average_precision_at_k))
+        #print("Average precision of query {} is: {}".format(query, average_precision_at_k))
 
         # F1 SCORE
         f1_score = 2 * (precision_at_k * recall_at_k) / (precision_at_k + recall_at_k)
-        print("F1 score of query {} is: {}".format(query,f1_score))
+        #print("F1 score of query {} is: {}".format(query,f1_score))
         
         # RECIPROCAL RANK (later we will compute the avg for all queries to obtain the MRR)
         ground_truth = ordered_df['label'].tolist()
@@ -219,20 +226,32 @@ def main():
 
         # NORMALIZED DISCOUNTED CUMULATIVE GAIN 
         ndcg_atk = np.round(ndcg_at_k(sorted_adapted_df['label'], sorted_adapted_df['predicted'], k=10), 4)
-        print('Normalized Discounted Cumulative Gain:', ndcg_atk )
+        #print('Normalized Discounted Cumulative Gain:', ndcg_atk )
 
     # MEAN AVERAGE PRECISION (mAP)
     # outside the loop because it is a metric for all the queries
     mAP  = sum(averages)/len(averages)
-    print("Mean average precision for all queries is:", mAP)
+    #print("Mean average precision for all queries is:", mAP)
 
     # MEAN RECIPROCAL RANK (MRR)
     # Compute the average of the RR for all the queries
     mrr = sum(rr)/len(rr)
-    print("Mean Reciprocal Rank for all queries:", mrr)
-    '''
+    #print("Mean Reciprocal Rank for all queries:", mrr)
     
-    ## 2 DIMENSIONAL REPRESENTATION
+    # WORD2VEC
+    # Tokenize the sentences
+    tokenized_tweets = [word_tokenize(tw) for tw in list_of_tweets]
+
+    # Create Word2Vec model
+    model = Word2Vec(sentences=tokenized_tweets, vector_size=100, window=5, min_count=1, workers=4)
+    # ajustar parametres
+
+    # Access vector for a specific word
+    vector = model.wv['war']
+    print("Vector for 'war':", vector)
+
+    # TSNE algorithm --> from part 2
+    '''## 2 DIMENSIONAL REPRESENTATION
     colors = ['#ABEBC6', '#AED6F1', '#EC7063', '#CCD1D1', '#D7BDE1', '#EB984E', '#52BE80', '#F7DC6F']
     
     # Create a TF-IDF vectorizer
@@ -260,10 +279,8 @@ def main():
     plt.savefig("./results/tsne_plot.png")
 
     # Close the plot to free up memory (optional)
-    plt.close()
-
-    
-
+    plt.close()'''
+   
 if __name__ == '__main__':
     main()
 

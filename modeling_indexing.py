@@ -87,7 +87,7 @@ def create_index_tfidf(lines, num_documents):
     idf = defaultdict(float)
     our_score = defaultdict(list)
 
-    
+        
     for tweet in lines:
         # we get the fields of each tweet
         tweet_arr = tweet.split("|") 
@@ -106,6 +106,8 @@ def create_index_tfidf(lines, num_documents):
         current_page_index = {}
 
         for position, term in enumerate(tweet_text):  
+            while len(our_score[term]) < 4:
+                    our_score[term].append(0) 
             
             try:
                 # if the term is already in the dict append the position to the corresponding list
@@ -116,20 +118,18 @@ def create_index_tfidf(lines, num_documents):
 
                 #AQUI CREEM EL NOU SCORE PER CADA TERM (nomes una vegada per cada term a cada document)
 
-                while len(our_score[term]) < 4:
-                    our_score[term].append(0) 
 
-                tweet_likes += our_score[term][0]
+                '''tweet_likes += our_score[term][0]
                 tweet_rts += our_score[term][1]
                 follower_count += our_score[term][2]
-                verified = our_score[term][3]
+                verified = our_score[term][3]'''
 
                 # ourscore... .remove(algo...) ????
 
-                our_score[term].insert(0, tweet_likes)
-                our_score[term].insert(1, tweet_rts)
-                our_score[term].insert(2, follower_count)
-                our_score[term].insert(3, verified) 
+                our_score[term][0]+= tweet_likes
+                our_score[term][1] += tweet_rts
+                our_score[term][2] += follower_count
+                our_score[term][3] += verified
             
         #normalize term frequencies
         # Compute the denominator to normalize term frequencies (formula 2 above)
@@ -205,12 +205,28 @@ def rank_documents(terms, docs, index, idf, tf, our_score):
         ## Compute tf*idf(normalize TF as done with documents)
         query_vector[termIndex]=query_terms_count[term]/query_norm * idf[term]
         # Our score for each term 
-        our_score_qv[termIndex] = (our_score[term][0] + our_score[term][1])*0.3 + our_score[term][2]*0.2 + our_score[term][3]*0.2
+        
+        print('our score for', term, '-->', our_score[term])
+        
+        if len(our_score[term]) == 0: # in case the query term does not appear in any tweets
+            like_score = 0
+            rt_score = 0
+            follower_score = 0
+            verified_score= 0
+        else:
+            like_score = our_score[term][0]
+            rt_score = our_score[term][1]
+            follower_score = our_score[term][2]
+            verified_score = our_score[term][3]
+
+        # verified score la podriem treure pq sempre es 0
+
+        our_score_qv[termIndex] = (like_score+ rt_score)*0.3 + follower_score*0.2 + verified_score*0.2
         # Generate doc_vectors for matching docs
         for doc_index, (doc, postings) in enumerate(index[term]):
             if doc.strip() in docs:
                 doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]
-                our_score_dv[doc][termIndex] = (our_score[term][0] + our_score[term][1])*0.3 + our_score[term][2]*0.2 + our_score[term][3]*0.2
+                our_score_dv[doc][termIndex] = (like_score + rt_score)*0.3 + follower_score*0.2 + verified_score*0.2
 
                 
     # Calculate the score of each doc(cosine similarity between queyVector and each docVector)
