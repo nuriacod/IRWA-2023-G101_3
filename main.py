@@ -20,6 +20,7 @@ from evaluation import avg_precision_at_k, map_at_k, rr_at_k, dcg_at_k, ndcg_at_
 from modeling_indexing import create_inverted_index, create_index_tfidf, rank_documents, search_tf_idf,subset_search_tf_idf
 from preprocessing import preprocessing, get_fields
 from plots_data_analytics import temporal_plot, word_cloud, text_length_distribution
+from Word2Vec import get_top_tweets, tweet2Vec
 
 def striplist(l):
     return([x.strip() for x in l])
@@ -97,6 +98,11 @@ def main():
             list_of_tweets.append(our_str)
             tweet_fulltext.append(aux_text)
 
+    list_all_tweets = list_of_tweets
+
+    
+    
+
     #WORDCLOUD
     # word_cloud(word_dist)
 
@@ -132,10 +138,10 @@ def main():
     # Build  tfidf index
     num_documents = len(list_of_tweets)
     global tf, idf, df, tf_idf_index, our_score
+
     print('\nCreating tf-idf index...')
     tf_idf_index, tf, df, idf, our_score = create_index_tfidf(list_of_tweets, num_documents)
-
-    print(our_score)
+    
 
     averages = []
     rr = []
@@ -144,6 +150,7 @@ def main():
     for query in our_query_df.our_query_id.unique():
         print('\n***** Searching docs for {}... *****'.format(query))
 
+    
         # creating the subset of documents that we have tagged as relevant (or not) in the csv file
         q_ids = docids_for_evaluation(query, our_query_df) 
         q_ranking,our_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids,idf,tf,our_score)
@@ -238,17 +245,7 @@ def main():
     mrr = sum(rr)/len(rr)
     #print("Mean Reciprocal Rank for all queries:", mrr)
     
-    # WORD2VEC
-    # Tokenize the sentences
-    tokenized_tweets = [word_tokenize(tw) for tw in list_of_tweets]
 
-    # Create Word2Vec model
-    model = Word2Vec(sentences=tokenized_tweets, vector_size=100, window=5, min_count=1, workers=4)
-    # ajustar parametres
-
-    # Access vector for a specific word
-    vector = model.wv['war']
-    print("Vector for 'war':", vector)
 
     # TSNE algorithm --> from part 2
     '''## 2 DIMENSIONAL REPRESENTATION
@@ -280,9 +277,20 @@ def main():
 
     # Close the plot to free up memory (optional)
     plt.close()'''
+    
+    # EXERCISE 2 Word2Vec + Cosine Similarity
+
+    for _,query in query_map.items(): 
+        tweet_vectors,model = tweet2Vec(list_all_tweets)
+        top_tweets = get_top_tweets(query,model, tweet_vectors,tweet_fulltext, top_n=20)
+
+        print("\n======================\nTop 20 Tweets of query:{}\n".format(query))
+        for i, tweet in enumerate(top_tweets, 1):
+            print(f"{i}. {tweet}")
+ 
+ 
    
 if __name__ == '__main__':
     main()
-
 
     
