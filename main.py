@@ -127,11 +127,12 @@ def main():
     
     # Build  tfidf index
     num_documents = len(list_of_tweets)
-    global tf, idf, df, tf_idf_index
+    global tf, idf, df, tf_idf_index, our_score
     print('\nCreating tf-idf index...')
-    tf_idf_index, tf, df, idf = create_index_tfidf(list_of_tweets, num_documents)
-    
-    
+    tf_idf_index, tf, df, idf, our_score = create_index_tfidf(list_of_tweets, num_documents)
+
+    print(our_score)
+
     averages = []
     rr = []
     list_of_list_tweets = []
@@ -141,12 +142,17 @@ def main():
 
         # creating the subset of documents that we have tagged as relevant (or not) in the csv file
         q_ids = docids_for_evaluation(query, our_query_df) 
-        q_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids,idf,tf)
+        q_ranking,our_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids,idf,tf,our_score)
+
         # Chosen number of documents: 
         top = 10
 
-        print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(q_ranking), query_map[query]))
-        doc_ids =[]
+        #print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(q_ranking), query_map[query]))
+        print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(our_ranking), query_map[query]))
+        
+        #COMMENT ALL THIS BECAUSE IT IS THE EVALUATION PART (we just want the ranking now)
+    '''     
+    doc_ids =[]
         map_doc_ids = {}
         list_of_tweets = []
         # Iterate over the top 10 mos relevant documents for each query
@@ -224,6 +230,7 @@ def main():
     # Compute the average of the RR for all the queries
     mrr = sum(rr)/len(rr)
     print("Mean Reciprocal Rank for all queries:", mrr)
+    '''
     
     ## 2 DIMENSIONAL REPRESENTATION
     colors = ['#ABEBC6', '#AED6F1', '#EC7063', '#CCD1D1', '#D7BDE1', '#EB984E', '#52BE80', '#F7DC6F']

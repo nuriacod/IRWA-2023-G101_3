@@ -122,7 +122,7 @@ def get_fields(line,doc_id,word_dist):
     
     our_str = str(doc_id) + ' | ' + str(line['id']) + ' | ' + preprocessing(line['full_text'],word_dist, True)+ ' | ' + \
             str(line['created_at']) + ' | ' + ht_list + ' | ' + str(line['favorite_count']) + ' | ' + \
-            str(line['retweet_count']) + ' | ' + our_url
+            str(line['retweet_count']) + ' | ' + our_url + ' | '+ str(line['user']['followers_count']) + ' | ' + str(line['user']['verified'])
     
     text = line['full_text']
     return our_str, text

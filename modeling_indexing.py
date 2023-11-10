@@ -6,7 +6,9 @@ from preprocessing import preprocessing
 from numpy import linalg as la
 import string
 from array import array
-import collections 
+import collections
+from sklearn.preprocessing import StandardScaler
+import collections
 
 
 
@@ -73,7 +75,9 @@ def create_index_tfidf(lines, num_documents):
     tf - normalized term frequency for each term in each document
     df - number of documents each term appear in
     idf - inverse document frequency of each term
+    our_score - dictionary with the score we generated for each term
     """
+    scaler = StandardScaler()
 
     index = defaultdict(list)
     # Term frequencies of terms in documents (documents in the same order as in the main index)
@@ -81,7 +85,9 @@ def create_index_tfidf(lines, num_documents):
     # Document frequencies of terms in the corpus
     df = defaultdict(int)  
     idf = defaultdict(float)
+    our_score = defaultdict(list)
 
+    
     for tweet in lines:
         # we get the fields of each tweet
         tweet_arr = tweet.split("|") 
@@ -89,13 +95,18 @@ def create_index_tfidf(lines, num_documents):
         doc_id = tweet_arr[0]
         tweet_text = tweet_arr[2].split(" ")
         tweet_text = [word for word in tweet_text if word != ""]
+        tweet_likes = int(tweet_arr[5])
+        tweet_rts = int(tweet_arr[6])
+        follower_count = int(tweet_arr[8])
+        verified = tweet_arr[9] == 'True'
+
 
         ## create the index for the *current page* and store it in current_page_index
-
 
         current_page_index = {}
 
         for position, term in enumerate(tweet_text):  
+            
             try:
                 # if the term is already in the dict append the position to the corresponding list
                 current_page_index[term][1].append(position)
@@ -103,6 +114,23 @@ def create_index_tfidf(lines, num_documents):
                 # Add the new term as dict key and initialize the array of positions and add the position
                 current_page_index[term]=[doc_id, array('I',[position])] #'I' indicates unsigned int (int in Python)
 
+                #AQUI CREEM EL NOU SCORE PER CADA TERM (nomes una vegada per cada term a cada document)
+
+                while len(our_score[term]) < 4:
+                    our_score[term].append(0) 
+
+                tweet_likes += our_score[term][0]
+                tweet_rts += our_score[term][1]
+                follower_count += our_score[term][2]
+                verified = our_score[term][3]
+
+                # ourscore... .remove(algo...) ????
+
+                our_score[term].insert(0, tweet_likes)
+                our_score[term].insert(1, tweet_rts)
+                our_score[term].insert(2, follower_count)
+                our_score[term].insert(3, verified) 
+            
         #normalize term frequencies
         # Compute the denominator to normalize term frequencies (formula 2 above)
         # norm is the same for all terms of a document.
@@ -128,10 +156,18 @@ def create_index_tfidf(lines, num_documents):
         # Compute IDF following the formula (3) above. HINT: use np.log
         for term in df:
             idf[term] = np.round(np.log(float(num_documents/df[term])), 4)
+            # ret
+    
+    '''our_score[:, 0] = scaler.fit_transform(our_score[:, 0].reshape(-1, 1)).flatten()
+    our_score[:, 1] = scaler.fit_transform(our_score[:, 1].reshape(-1, 1)).flatten()
+    our_score[:, 2] = scaler.fit_transform(our_score[:, 2].reshape(-1, 1)).flatten()
+    our_score[:, 3] = scaler.fit_transform(our_score[:, 3].reshape(-1, 1)).flatten()'''
 
-    return index, tf, df, idf
 
-def rank_documents(terms, docs, index, idf, tf):
+    return index, tf, df, idf, our_score
+
+
+def rank_documents(terms, docs, index, idf, tf, our_score):
     """
     Perform the ranking of the results of a search based on the tf-idf weights
 
@@ -149,8 +185,10 @@ def rank_documents(terms, docs, index, idf, tf):
     # I'm interested only on the element of the docVector corresponding to the query terms
     # The remaining elements would became 0 when multiplied to the query_vector
     doc_vectors = defaultdict(lambda: [0] * len(terms))
+    our_score_dv = defaultdict(lambda: [0] * len(terms)) # matrix of our score for  documents
 
     query_vector = [0] * len(terms)
+    our_score_qv = [0] * len(terms) # vector of term scores for query
 
     # get the frequency of each term in the query.
     query_terms_count = collections.Counter(terms)  
@@ -166,10 +204,13 @@ def rank_documents(terms, docs, index, idf, tf):
             continue
         ## Compute tf*idf(normalize TF as done with documents)
         query_vector[termIndex]=query_terms_count[term]/query_norm * idf[term]
+        # Our score for each term 
+        our_score_qv[termIndex] = (our_score[term][0] + our_score[term][1])*0.3 + our_score[term][2]*0.2 + our_score[term][3]*0.2
         # Generate doc_vectors for matching docs
         for doc_index, (doc, postings) in enumerate(index[term]):
             if doc.strip() in docs:
-                doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]  
+                doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]
+                our_score_dv[doc][termIndex] = (our_score[term][0] + our_score[term][1])*0.3 + our_score[term][2]*0.2 + our_score[term][3]*0.2
 
                 
     # Calculate the score of each doc(cosine similarity between queyVector and each docVector)
@@ -177,11 +218,18 @@ def rank_documents(terms, docs, index, idf, tf):
     doc_scores.sort(reverse=True)
     result_docs = [x[1] for x in doc_scores]
 
+    our_doc_scores=[[np.dot(curDocVec, our_score_qv), doc] for doc, curDocVec in our_score_dv.items() ]
+    our_doc_scores.sort(reverse=True)
+    our_result_docs = [x[1] for x in our_doc_scores]
+
     if len(result_docs) == 0:
-        print("No results found, try again")
+        print("No results found with tf-idf, try again")
+
+    if len(our_result_docs) == 0:
+        print("No results found with our scores, try again")
         exit()
     #print ('\n'.join(result_docs), '\n')
-    return result_docs
+    return result_docs, our_result_docs
 
 def search_tf_idf(query, inv_idx,idf,tf):
     
@@ -216,7 +264,7 @@ def search_tf_idf(query, inv_idx,idf,tf):
     ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
     return ranked_docs
 
-def subset_search_tf_idf(query, inv_idx, subset,idf,tf):
+def subset_search_tf_idf(query, inv_idx, subset,idf,tf,our_score):
     """
     Works in the same fashion as search_tf_idf, but only taking into account the subset of tagged documents for evaluation.
     """
@@ -250,5 +298,6 @@ def subset_search_tf_idf(query, inv_idx, subset,idf,tf):
 
     #print("docs",docs)
 
-    ranked_docs = rank_documents(query, docs, inv_idx, idf, tf)
-    return ranked_docs
+    ranked_docs, our_rank_docs = rank_documents(query, docs, inv_idx, idf, tf, our_score)
+    # our_ranked_docs = our_rank_documents() --> ranking de documents amb la nostra score
+    return ranked_docs, our_rank_docs
