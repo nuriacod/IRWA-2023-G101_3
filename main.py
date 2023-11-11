@@ -99,6 +99,13 @@ def main():
             tweet_fulltext.append(aux_text)
 
     list_all_tweets = list_of_tweets
+    for _,query in query_map.items(): 
+        tweet_vectors,model = tweet2Vec(list_all_tweets)
+        top_tweets = get_top_tweets(query,model, tweet_vectors,list_all_tweets, top_n=20)
+
+        print("\n======================\nTop 20 Tweets of query:{}\n".format(query))
+        for i, tweet in enumerate(top_tweets, 1):
+            print(f"{i}. {tweet}")    
 
     
     
@@ -280,13 +287,7 @@ def main():
     
     # EXERCISE 2 Word2Vec + Cosine Similarity
 
-    for _,query in query_map.items(): 
-        tweet_vectors,model = tweet2Vec(list_all_tweets)
-        top_tweets = get_top_tweets(query,model, tweet_vectors,tweet_fulltext, top_n=20)
-
-        print("\n======================\nTop 20 Tweets of query:{}\n".format(query))
-        for i, tweet in enumerate(top_tweets, 1):
-            print(f"{i}. {tweet}")
+   
  
  
    
