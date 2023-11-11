@@ -60,13 +60,12 @@ def update_count(tweet,total_count):
     total_count+= len(words)
     return total_count
 
-def print_query(doc_id):
+def print_query(doc_id, source):
     """
-    Given a doc id returns the id as an int an the corresponding doc text (tweet)
+    Given a doc id returns the id as an int an the corresponding text (tweet)
     """
-    
     id = int(doc_id.replace('doc_', ''))
-    text = tweet_fulltext[id-1]
+    text = source[doc_id]
     print("{}:{}".format(id,text))
     return id,text
           
@@ -88,18 +87,22 @@ def main():
 
     # key = tweet_id --> value = doc_xxxx
     tweet_to_doc = csv_to_dict(dict_path) 
+
+    # doc_xxxx --> tweet_id
+    docid_to_tweet = {}
+
     total_count = 0
     with open(docs_path) as fp:
         for i, line in enumerate(fp):
             json_line = json.loads(line)
             our_docid = tweet_to_doc[str(json_line['id'])]
             our_str, aux_text = get_fields(json_line,our_docid,word_dist)
+            docid_to_tweet[our_docid.strip()] = our_str
             total_count = update_count(our_str,total_count)
             list_of_tweets.append(our_str)
             tweet_fulltext.append(aux_text)
 
     list_all_tweets = list_of_tweets
-    
     
 
     #WORDCLOUD
@@ -147,21 +150,19 @@ def main():
     list_of_list_tweets = []
     #iterate over queries in our_query_df for evaluation
     for query in our_query_df.our_query_id.unique():
-        print('\n***** Searching docs for {}... *****'.format(query))
+        print('\n*************** Searching docs for {}... ***************'.format(query))
 
-    
         # creating the subset of documents that we have tagged as relevant (or not) in the csv file
         q_ids = docids_for_evaluation(query, our_query_df) 
         q_ranking,our_ranking = subset_search_tf_idf(query_map[query], tf_idf_index, q_ids,idf,tf,our_score)
 
-        print('OUR RANKING:\n', striplist(our_ranking))
-
+        our_ranking = striplist(our_ranking)
+    
         # Chosen number of documents: 
         top = 10
 
-        #print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(q_ranking), query_map[query]))
-        print("======================\nTop {} results out of {} for the searched query '{}':".format(top, len(our_ranking), query_map[query]))
-
+        print("======================\nTop {} results out of {} for the searched query (TF-IDF)'{}':".format(top, len(q_ranking), query_map[query]))
+        
         #COMMENT ALL THIS BECAUSE IT IS THE EVALUATION PART (we just want the ranking now)
         # descomentat perq necessit list_of_tweets
 
@@ -170,10 +171,18 @@ def main():
         list_of_tweets = []
         # Iterate over the top 10 most relevant documents for each query
         for i, d_id in enumerate(q_ranking[:top]):
-            _,tweet = print_query(d_id)
+            _,tweet = print_query(d_id.strip(), docid_to_tweet)
             list_of_tweets.append(tweet)
             doc_ids.append(d_id)
             map_doc_ids[d_id.strip()] = i+1
+
+        print("======================\nTop {} results out of {} for the searched query (OUR SCORE)'{}':".format(top, len(our_ranking), query_map[query]))
+
+        for i, d_id in enumerate(our_ranking[:top]):
+            _,tweet = print_query(d_id.strip(), docid_to_tweet)
+            #list_of_tweets.append(tweet)
+            #doc_ids.append(d_id)
+            #map_doc_ids[d_id.strip()] = i+1
 
         # List of tweets for each query for the 2D representation
         list_of_list_tweets.append(list_of_tweets)

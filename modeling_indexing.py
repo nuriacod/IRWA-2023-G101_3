@@ -116,17 +116,9 @@ def create_index_tfidf(lines, num_documents):
                 # Add the new term as dict key and initialize the array of positions and add the position
                 current_page_index[term]=[doc_id, array('I',[position])] #'I' indicates unsigned int (int in Python)
 
-                #AQUI CREEM EL NOU SCORE PER CADA TERM (nomes una vegada per cada term a cada document)
+                #CREATE HERE NEW SCORE FOR EACH TERM (only consider it once if the term appears two times )
 
-
-                '''tweet_likes += our_score[term][0]
-                tweet_rts += our_score[term][1]
-                follower_count += our_score[term][2]
-                verified = our_score[term][3]'''
-
-                # ourscore... .remove(algo...) ????
-
-                our_score[term][0]+= tweet_likes
+                our_score[term][0] += tweet_likes
                 our_score[term][1] += tweet_rts
                 our_score[term][2] += follower_count
                 our_score[term][3] += verified
@@ -157,12 +149,27 @@ def create_index_tfidf(lines, num_documents):
         for term in df:
             idf[term] = np.round(np.log(float(num_documents/df[term])), 4)
             # ret
-    
-    '''our_score[:, 0] = scaler.fit_transform(our_score[:, 0].reshape(-1, 1)).flatten()
-    our_score[:, 1] = scaler.fit_transform(our_score[:, 1].reshape(-1, 1)).flatten()
-    our_score[:, 2] = scaler.fit_transform(our_score[:, 2].reshape(-1, 1)).flatten()
-    our_score[:, 3] = scaler.fit_transform(our_score[:, 3].reshape(-1, 1)).flatten()'''
 
+    '''our_score[:, 0] = scaler.fit_transform([row[0] for row in our_score.values().reshape(-1, 1)]).flatten()
+    our_score[:, 1] = scaler.fit_transform([row[1] for row in our_score.values().reshape(-1, 1)]).flatten()
+    our_score[:, 2] = scaler.fit_transform([row[2] for row in our_score.values().reshape(-1, 1)]).flatten()
+    our_score[:, 3] = scaler.fit_transform([row[3] for row in our_score.values().reshape(-1, 1)]).flatten()'''
+
+    # Convert the defaultdict to a numpy array for easier manipulation
+    data_array = np.array(list(our_score.values()))
+
+    # Transpose the array so that rows become columns and vice versa
+    transposed_data = data_array.transpose()
+
+    # Normalize each row (corresponding to each position) independently
+    normalized_data = scaler.fit_transform(transposed_data)
+
+    # Transpose the normalized data back to the original format
+    normalized_data = normalized_data.transpose()
+
+    # Update the our_score dictionary with the normalized values
+    for i, term in enumerate(our_score):
+        our_score[term] = list(normalized_data[i])
 
     return index, tf, df, idf, our_score
 
@@ -270,7 +277,7 @@ def search_tf_idf(query, inv_idx,idf,tf):
             if conj == 1:
                 # intersection --> the documents must contain ALL the words in the query
                 docs = docs & set(term_docs)
-            elif conj == 0:
+            if conj == 0:
                 # docs = docs Union term_docs
                 docs |= set(term_docs)
         except:
@@ -291,6 +298,7 @@ def subset_search_tf_idf(query, inv_idx, subset,idf,tf,our_score):
     query = preprocessing(query, {}, False)
     query=query.split()
     docs = set()
+    count = 0
     for term in query:
         try:
             # store in term_docs the ids of the docs that contain "term"
@@ -299,7 +307,11 @@ def subset_search_tf_idf(query, inv_idx, subset,idf,tf,our_score):
 
             if conj == 1:
                 # intersection --> the documents must contain ALL the words in the query
-                docs = docs & set(term_docs)
+                if count== 0:
+                    docs = set(term_docs)
+                    count = 1
+                else:
+                    docs = docs & set(term_docs)
             elif conj == 0:
                 # docs = docs Union term_docs
                 docs = docs.union(set(term_docs))

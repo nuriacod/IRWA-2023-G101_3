@@ -22,7 +22,7 @@ def tweet2Vec(list_of_tweets):
     tokenized_tweets = [word_tokenize(tw) for tw in list_of_tweets]
     
     # Create Word2Vec model
-    model = Word2Vec(sentences=tokenized_tweets, vector_size=100, window=5, min_count=1, workers=4)
+    model = Word2Vec(sentences=tokenized_tweets, vector_size=100, window=5, min_count=1, workers=4, epochs=60)
     tweet_vectors = []
     for tweet in list_of_tweets:
         tweet_arr = tweet.split("|") 
