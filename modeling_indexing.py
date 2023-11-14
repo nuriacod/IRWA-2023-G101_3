@@ -75,17 +75,15 @@ def create_index_tfidf(lines, num_documents):
     tf - normalized term frequency for each term in each document
     df - number of documents each term appear in
     idf - inverse document frequency of each term
-    our_score - dictionary with the score we generated for each term
+    our_score - dictionary with the score we generated for each doc
     """
-    scaler = StandardScaler()
-
     index = defaultdict(list)
     # Term frequencies of terms in documents (documents in the same order as in the main index)
     tf = defaultdict(list)  
     # Document frequencies of terms in the corpus
     df = defaultdict(int)  
     idf = defaultdict(float)
-    our_score = defaultdict(list)
+    our_score = defaultdict(float)
 
         
     for tweet in lines:
@@ -100,15 +98,14 @@ def create_index_tfidf(lines, num_documents):
         follower_count = int(tweet_arr[8])
         verified = tweet_arr[9] == 'True'
 
+        #Compute the score for the current doc based on tweet likes, retweets, etc.
+        our_score[doc_id] = (tweet_likes+ tweet_rts)*0.3 + (follower_count+ verified)*0.2
 
         ## create the index for the *current page* and store it in current_page_index
 
         current_page_index = {}
 
         for position, term in enumerate(tweet_text):  
-            while len(our_score[term]) < 4:
-                    our_score[term].append(0) 
-            
             try:
                 # if the term is already in the dict append the position to the corresponding list
                 current_page_index[term][1].append(position)
@@ -116,13 +113,6 @@ def create_index_tfidf(lines, num_documents):
                 # Add the new term as dict key and initialize the array of positions and add the position
                 current_page_index[term]=[doc_id, array('I',[position])] #'I' indicates unsigned int (int in Python)
 
-                #CREATE HERE NEW SCORE FOR EACH TERM (only consider it once if the term appears two times )
-
-                our_score[term][0] += tweet_likes
-                our_score[term][1] += tweet_rts
-                our_score[term][2] += follower_count
-                our_score[term][3] += verified
-            
         #normalize term frequencies
         # Compute the denominator to normalize term frequencies (formula 2 above)
         # norm is the same for all terms of a document.
@@ -150,27 +140,6 @@ def create_index_tfidf(lines, num_documents):
             idf[term] = np.round(np.log(float(num_documents/df[term])), 4)
             # ret
 
-    '''our_score[:, 0] = scaler.fit_transform([row[0] for row in our_score.values().reshape(-1, 1)]).flatten()
-    our_score[:, 1] = scaler.fit_transform([row[1] for row in our_score.values().reshape(-1, 1)]).flatten()
-    our_score[:, 2] = scaler.fit_transform([row[2] for row in our_score.values().reshape(-1, 1)]).flatten()
-    our_score[:, 3] = scaler.fit_transform([row[3] for row in our_score.values().reshape(-1, 1)]).flatten()'''
-
-    # Convert the defaultdict to a numpy array for easier manipulation
-    data_array = np.array(list(our_score.values()))
-
-    # Transpose the array so that rows become columns and vice versa
-    transposed_data = data_array.transpose()
-
-    # Normalize each row (corresponding to each position) independently
-    normalized_data = scaler.fit_transform(transposed_data)
-
-    # Transpose the normalized data back to the original format
-    normalized_data = normalized_data.transpose()
-
-    # Update the our_score dictionary with the normalized values
-    for i, term in enumerate(our_score):
-        our_score[term] = list(normalized_data[i])
-
     return index, tf, df, idf, our_score
 
 
@@ -192,10 +161,8 @@ def rank_documents(terms, docs, index, idf, tf, our_score):
     # I'm interested only on the element of the docVector corresponding to the query terms
     # The remaining elements would became 0 when multiplied to the query_vector
     doc_vectors = defaultdict(lambda: [0] * len(terms))
-    our_score_dv = defaultdict(lambda: [0] * len(terms)) # matrix of our score for  documents
 
     query_vector = [0] * len(terms)
-    our_score_qv = [0] * len(terms) # vector of term scores for query
 
     # get the frequency of each term in the query.
     query_terms_count = collections.Counter(terms)  
@@ -211,38 +178,31 @@ def rank_documents(terms, docs, index, idf, tf, our_score):
             continue
         ## Compute tf*idf(normalize TF as done with documents)
         query_vector[termIndex]=query_terms_count[term]/query_norm * idf[term]
-        # Our score for each term 
-        
-        print('our score for', term, '-->', our_score[term])
-        
-        if len(our_score[term]) == 0: # in case the query term does not appear in any tweets
-            like_score = 0
-            rt_score = 0
-            follower_score = 0
-            verified_score= 0
-        else:
-            like_score = our_score[term][0]
-            rt_score = our_score[term][1]
-            follower_score = our_score[term][2]
-            verified_score = our_score[term][3]
 
-        # verified score la podriem treure pq sempre es 0
-
-        our_score_qv[termIndex] = (like_score+ rt_score)*0.3 + follower_score*0.2 + verified_score*0.2
         # Generate doc_vectors for matching docs
         for doc_index, (doc, postings) in enumerate(index[term]):
             if doc.strip() in docs:
                 doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]
-                our_score_dv[doc][termIndex] = (like_score + rt_score)*0.3 + follower_score*0.2 + verified_score*0.2
-
-                
+ 
     # Calculate the score of each doc(cosine similarity between queyVector and each docVector)
     doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
     doc_scores.sort(reverse=True)
     result_docs = [x[1] for x in doc_scores]
+    #print('************** TF-IDF SCORES', doc_scores)
 
-    our_doc_scores=[[np.dot(curDocVec, our_score_qv), doc] for doc, curDocVec in our_score_dv.items() ]
+    #Normalize each of the values in the sum:
+    min_dot_product = min([np.dot(curDocVec, query_vector) for curDocVec in doc_vectors.values()])
+    max_dot_product = max([np.dot(curDocVec, query_vector) for curDocVec in doc_vectors.values()])
+
+    percentile_to_consider = 90
+    min_our_score = min([our_score[doc] for doc in our_score.keys()])
+    max_our_score = np.percentile([our_score[doc] for doc in our_score.keys()], percentile_to_consider)
+    
+    #MIN-MAX NORMALIZATION
+    our_doc_scores=[[0.6 * ((np.dot(curDocVec, query_vector) - min_dot_product) / (max_dot_product - min_dot_product)) +0.4 * np.clip(((our_score[doc] - min_our_score) / (max_our_score - min_our_score)), 0, 1),doc] for doc, curDocVec in doc_vectors.items() ]
+    
     our_doc_scores.sort(reverse=True)
+    #print('************** OUR SCORE', our_doc_scores)
     our_result_docs = [x[1] for x in our_doc_scores]
 
     if len(result_docs) == 0:

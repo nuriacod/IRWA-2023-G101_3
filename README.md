@@ -7,7 +7,7 @@ This project focuses on performing Natural Language Processing (NLP) on Twitter 
 Before running the code, make sure you have the required Python libraries installed. You can install them using pip:
 
 ```bash
-pip install nltk wordcloud matplotlib pandas numpy scikit-learn
+pip install nltk wordcloud matplotlib pandas numpy scikit-learn gensim
 ```
 ## Usage
 ### Main Script: 
@@ -33,6 +33,7 @@ The project relies on the following Python libraries:
 - Pandas
 - NumPy
 - Sklearn
+- Gensim
 <br></br>
 
 ## Results 
