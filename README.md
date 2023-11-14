@@ -49,8 +49,6 @@ The project relies on the following Python libraries:
 ### TEMPORAL ANALYSIS
 <img src="results/temporalPlot.jpg" alt="alt text" width="400" height="300">
 
-### TSNE PLOT
-<img src="results/tsne_plot.png" alt="alt text" width="400" height="300">
 
 
 
