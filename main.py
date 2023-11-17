@@ -95,6 +95,7 @@ def main():
     with open(docs_path) as fp:
         for i, line in enumerate(fp):
             json_line = json.loads(line)
+            
             our_docid = tweet_to_doc[str(json_line['id'])]
             our_str, aux_text = get_fields(json_line,our_docid,word_dist)
             docid_to_tweet[our_docid.strip()] = our_str

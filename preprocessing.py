@@ -125,4 +125,6 @@ def get_fields(line,doc_id,word_dist):
             str(line['retweet_count']) + ' | ' + our_url + ' | '+ str(line['user']['followers_count']) + ' | ' + str(line['user']['verified'])
     
     text = line['full_text']
+    our_fields = {'doc_id':str(doc_id), 'tweet_id':str(line['id'])} # crear diccionari per accedir als fields facilment
+    
     return our_str, text
