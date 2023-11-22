@@ -1,5 +1,7 @@
 import os
 from json import JSONEncoder
+import csv
+
 
 # pip install httpagentparser
 import httpagentparser  # for getting the user agent as json
@@ -8,7 +10,7 @@ from flask import Flask, render_template, session
 from flask import request
 
 from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
-from myapp.search.load_corpus import load_corpus
+from myapp.search.load_corpus import load_corpus, create_list_of_tweets
 from myapp.search.objects import Document, StatsDocument
 from myapp.search.search_engine import SearchEngine
 
@@ -41,13 +43,35 @@ analytics_data = AnalyticsData()
 # print("__file__", __file__ +path, filename = os.path.split(full_path)
 # print(path + ' --> ' + filename + "\n")
 # load documents corpus into memory.
+
+def csv_to_dict(filepath):
+    """
+    Converts a tab-delimited CSV file into a dictionary with values from the second 
+    column as keys and values from the first column as values
+    """
+    d = {}
+    with open(filepath, 'r', newline='') as file:
+        # Use tab as the delimiter
+        reader = csv.reader(file, delimiter='\t')  
+        for row in reader:
+            if len(row) == 2:
+                key, value = row
+                d[str(value)] = key
+    return d
+
 file_path = "IRWA_data_2023/Rus_Ukr_war_data.json"
+dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+
 
 # file_path = "../../tweets-data-who.json"
 corpus = load_corpus(file_path)
 #print("loaded corpus. first elem:", list(corpus.values())[0])
 print('CORPUS IS LOADED')
+global tf, idf, df, tf_idf_index, our_score, list_of_tweets
+tweet_to_doc = csv_to_dict(dict_path) 
 
+list_of_tweets = create_list_of_tweets(file_path, tweet_to_doc)
+print(list_of_tweets[0])
 
 # Home URL "/"
 @app.route('/')
@@ -79,7 +103,7 @@ def search_form_post():
 
     search_id = analytics_data.save_query_terms(search_query)
 
-    results = search_engine.search(search_query, search_id, corpus)
+    results = search_engine.search(search_query, search_id, corpus, list_of_tweets)
 
     found_count = len(results)
     session['last_found_count'] = found_count

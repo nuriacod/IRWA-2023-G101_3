@@ -120,7 +120,7 @@ def get_fields(line,doc_id,word_dist):
         ht_list += ' '+element['text']
 
     
-    our_str = str(doc_id) + ' | ' + str(line['id']) + ' | ' + preprocessing(line['full_text'],word_dist, True)+ ' | ' + \
+    our_str = str(doc_id) + ' | ' + str(line['id']) + ' | ' + preprocessing(line['full_text'],word_dist, False)+ ' | ' + \
             str(line['created_at']) + ' | ' + ht_list + ' | ' + str(line['favorite_count']) + ' | ' + \
             str(line['retweet_count']) + ' | ' + our_url + ' | '+ str(line['user']['followers_count']) + ' | ' + str(line['user']['verified'])
     

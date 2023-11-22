@@ -19,6 +19,8 @@ class AnalyticsData:
 
     def save_query_terms(self, terms: str) -> int:
         print(self)
+        # AFegir un diccionari o algo per controlar les queries 
+        #que no es repeteixin ids i si una query es repeteix donar li el que li pertoca
         return random.randint(0, 100000)
 
 

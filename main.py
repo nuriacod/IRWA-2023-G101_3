@@ -145,7 +145,6 @@ def main():
     print('\nCreating tf-idf index...')
     tf_idf_index, tf, df, idf, our_score = create_index_tfidf(list_of_tweets, num_documents)
     
-
     averages = []
     rr = []
     list_of_list_tweets = []
