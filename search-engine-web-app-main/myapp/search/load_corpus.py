@@ -49,32 +49,6 @@ def _load_tweets_as_dataframe(json_data):
                      axis=1)
     return data
 
-'''def load_json_as_df(path): # OUR OWN FUNCTION
-    '''
-    #Our own function to load the json file into a pandas dataframe directly from the path
-''' 
-
-    with open(path) as fp:
-        #iterar lineas i afegir llista
-        tweets_data = []
-        for line in fp.readlines():
-            json_line = json.loads(line)
-            tweets_data.append(json_line)
-
-        tweets_df = pd.DataFrame(tweets_data)
-        filter_columns = ["id", "full_text", "created_at", "entities", "retweet_count", "favorite_count", "lang"]
-        #tweets_df = tweets_df[filter_columns]
-        tweets_df.set_index(['id'])
-        print(tweets_df.columns)
-
-        corpus = tweets_df.rename(
-        columns={"id": "Id", "full_text": "Tweet", "screen_name": "Username", "created_at": "Date",
-                 "favorite_count": "Likes",
-                 "retweet_count": "Retweets", "lang": "Language"})
-
-    return corpus'''
-
-
 def _build_tags(row):
     tags = []
     # for ht in row["hashtags"]:

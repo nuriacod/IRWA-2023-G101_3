@@ -138,6 +138,3 @@ def get_fields(line,doc_id,word_dist):
                   'verified': str(line['user']['verified'])} # crear diccionari per accedir als fields facilment
     
     return our_str, text
-
-def get_field_dict(line, doc_id, df):
-    _,_,df[line['Id']] = get_fields(line, doc_id, {})
