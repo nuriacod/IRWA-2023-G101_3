@@ -42,10 +42,15 @@ def load_json_file(path):
         #iterar lineas i afegir llista
         text_data = []
         for line in fp.readlines():
-            text_data.append(line)
+            text_data.append(json.loads(line))
+
+    print('****\n',text_data[0])
+            
         
     # Parse the string into a JSON object
-    json_data = json.loads(text_data)
+    #json_data = json.loads(text_data) # hem de passarli linia per linia
+
+    '''text_data is a list of dictionaries. each entry is a line of the json converted to python dictionary'''
 
     '''df = pd.json_normalize(data)'''
-    return json_data
+    return text_data

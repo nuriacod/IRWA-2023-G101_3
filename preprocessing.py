@@ -125,6 +125,19 @@ def get_fields(line,doc_id,word_dist):
             str(line['retweet_count']) + ' | ' + our_url + ' | '+ str(line['user']['followers_count']) + ' | ' + str(line['user']['verified'])
     
     text = line['full_text']
-    our_fields = {'doc_id':str(doc_id), 'tweet_id':str(line['id'])} # crear diccionari per accedir als fields facilment
+
+    our_fields = {'doc_id':str(doc_id), 
+                  'tweet_id':str(line['id']),
+                  'text':preprocessing(line['full_text'],word_dist, True),
+                  'timestamp':str(line['created_at']),
+                  'ht_list': ht_list,
+                  'fav_count':str(line['favorite_count']),
+                  'rt_count':str(line['retweet_count']),
+                  'url':our_url,
+                  'follower_count':str(line['user']['followers_count']),
+                  'verified': str(line['user']['verified'])} # crear diccionari per accedir als fields facilment
     
     return our_str, text
+
+def get_field_dict(line, doc_id, df):
+    _,_,df[line['Id']] = get_fields(line, doc_id, {})

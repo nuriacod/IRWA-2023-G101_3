@@ -1,7 +1,9 @@
 import random
 
 from myapp.search.objects import ResultItem, Document
-
+#from algorithms import search_in_corpus
+'''from modeling_indexing import create_inverted_index, create_index_tfidf, rank_documents, search_tf_idf,subset_search_tf_idf
+from preprocessing import preprocessing, get_fields'''
 
 def build_demo_results(corpus: dict, search_id):
     """
@@ -34,12 +36,12 @@ class SearchEngine:
 
         results = []
         ##### your code here #####
+
         results = build_demo_results(corpus, search_id)  
         
-        
         # replace with call to search algorithm
-
-        # results = search_in_corpus(search_query)
+        #list_of_tweets = []
+        #results = search_in_corpus(search_query, list_of_tweets)
         ##### your code here #####
 
         return results

@@ -41,11 +41,12 @@ analytics_data = AnalyticsData()
 # print("__file__", __file__ +path, filename = os.path.split(full_path)
 # print(path + ' --> ' + filename + "\n")
 # load documents corpus into memory.
-file_path = path + "/Rus_Ukr_war_data.json"
+file_path = "IRWA_data_2023/Rus_Ukr_war_data.json"
 
 # file_path = "../../tweets-data-who.json"
 corpus = load_corpus(file_path)
-print("loaded corpus. first elem:", list(corpus.values())[0])
+#print("loaded corpus. first elem:", list(corpus.values())[0])
+print('CORPUS IS LOADED')
 
 
 # Home URL "/"
