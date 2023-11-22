@@ -39,8 +39,10 @@ def load_json_file(path):
 
     # Load the file into a unique string
     with open(path) as fp:
-        text_data = fp.readlines()[0]
-        print(type(text_data))
+        #iterar lineas i afegir llista
+        text_data = []
+        for line in fp.readlines():
+            text_data.append(line)
         
     # Parse the string into a JSON object
     json_data = json.loads(text_data)
