@@ -4,8 +4,11 @@ from array import array
 import math 
 import numpy as np
 from myapp.search.load_corpus import preprocessing
+from myapp.search.objects import ResultItem, Document
 import collections
 from numpy import linalg as la
+import pickle
+
 
 def rank_documents(terms, docs, index, idf, tf):
     """
@@ -24,6 +27,7 @@ def rank_documents(terms, docs, index, idf, tf):
 
     # I'm interested only on the element of the docVector corresponding to the query terms
     # The remaining elements would became 0 when multiplied to the query_vector
+    
     doc_vectors = defaultdict(lambda: [0] * len(terms))
 
     query_vector = [0] * len(terms)
@@ -130,12 +134,16 @@ def search_in_corpus(query, corpus, search_id):
             idf[term] = np.round(np.log(float(size/df[term])), 4)
             # ret
 
+    with open('index.pkl', 'wb') as fp:
+        pickle.dump(idf,, fp)
+
 
     if 'and' in query: conj = 1
     else: conj = 0
 
     query = preprocessing(query, {}, False)
     query=query.split()
+    print('QUERY -->', query)
     docs = set()
     for term in query:
         try:
@@ -153,12 +161,13 @@ def search_in_corpus(query, corpus, search_id):
             pass
     docs = list(docs)
     ranked_docs = rank_documents(query, docs, index, idf, tf)
+    print(len(ranked_docs))
     print('RANKED DOCS ----->',ranked_docs[0])
     
-    '''for doc in ranked_docs:
-    res.append(ResultItem(item.id, item.title, item.description, item.doc_date,
-                            "doc_details?id={}&search_id={}&param2=2".format(item.id, search_id), random.random()))
-    '''                    
+    for idx, doc in enumerate(ranked_docs):
+        item = corpus[doc]
+        res.append(ResultItem(item.id, item.title, item.description, item.doc_date,
+                            "doc_details?id={}&search_id={}&param2=2".format(item.id, search_id), idx))
+                        
 
-
-    return ""
+    return res
