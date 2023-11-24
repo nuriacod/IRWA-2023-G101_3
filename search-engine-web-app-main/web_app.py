@@ -59,8 +59,8 @@ def csv_to_dict(filepath):
                 d[str(value)] = key
     return d
 
-file_path = "IRWA_data_2023/Rus_Ukr_war_data.json"
-dict_path = './IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+file_path = "./Rus_Ukr_war_data.json"
+dict_path = './Rus_Ukr_war_data_ids.csv'
 
 
 # file_path = "../../tweets-data-who.json"
@@ -127,6 +127,7 @@ def doc_details():
 
     # get the query string parameters from request
     clicked_doc_id = request.args["id"]
+    tweet = corpus[int(clicked_doc_id)]
     p1 = int(request.args["search_id"])  # transform to Integer
     p2 = int(request.args["param2"])  # transform to Integer
     print("click in id={}".format(clicked_doc_id))
@@ -139,7 +140,7 @@ def doc_details():
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
 
-    return render_template('doc_details.html')
+    return render_template('doc_details.html',tweet=tweet)
 
 
 @app.route('/stats', methods=['GET'])

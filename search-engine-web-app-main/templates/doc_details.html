@@ -1,15 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Document Detail - IRWA Search Engine</title>
-</head>
-<body>
-<div><a href="#" onclick="history.go(-1)">Go Back</a></div>
-<div><a href="#" onclick="history.go(-2)">Go Back 2 pages</a></div>
-<div><a href="#" onclick="history.go(-3)">Go Back 3 pages</a></div>
-<div><a href="#" onclick="history.go(-4)">Go Back 4 pages</a></div>
-<div><a href="/stats" >Stats</a></div>
-<div><a href="/dashboard" >Dashboard</a></div>
-</body>
-</html>
+{% extends "base.html" %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+    <div class="tweet-container">
+        <div class="tweet-go-back">
+            <a href="#" onclick="history.back()">Go Back</a>
+        </div>
+        <div class="tweet-header">
+            <h2 class="tweet-title">{{ tweet.title }}</h2>
+            <p class="tweet-date">{{ tweet.doc_date }}</p>
+        </div>
+        <div class="tweet-description">
+            {{ tweet.description }}
+        </div>
+    </div>
+{% endblock %}
+
+

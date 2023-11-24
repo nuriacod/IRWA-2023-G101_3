@@ -1,6 +1,8 @@
 import datetime
 import json
 from random import random
+import pickle
+import os
 
 from faker import Faker
 
@@ -54,3 +56,26 @@ def load_json_file(path):
 
     '''df = pd.json_normalize(data)'''
     return text_data
+
+
+def file_exists(filename):
+    return os.path.exists(filename)
+
+# Function to load dictionaries from a pickle file
+def load_dicts(filename):
+    with open(filename, 'rb') as file:
+        index= pickle.load(file)
+        tf = pickle.load(file)
+        df = pickle.load(file)
+        idf = pickle.load(file)
+    return index, tf, df, idf
+
+
+# Function to save dictionaries to a pickle file
+def save_dicts(filename, index, tf, df, idf):
+    with open(filename, 'wb') as file:
+        pickle.dump(index, file)
+        pickle.dump(tf, file)
+        pickle.dump(df, file)
+        pickle.dump(idf, file)
+
