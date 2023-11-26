@@ -164,6 +164,7 @@ def search_in_corpus(query, corpus, search_id):
     query=query.split()
     print('QUERY -->', query)
     docs = set()
+    first_term = True
     for term in query:
         try:
             # store in term_docs the ids of the docs that contain "term"
@@ -171,8 +172,13 @@ def search_in_corpus(query, corpus, search_id):
 
             if conj == 1:
                 # intersection --> the documents must contain ALL the words in the query
-                docs = docs & set(term_docs)
-                print()
+                
+                if first_term:
+                    docs = term_docs
+                    first_term = False
+                else:
+                    docs = set(docs).intersection(set(term_docs))
+                
             if conj == 0:
                 # docs = docs Union term_docs
                 docs |= set(term_docs)

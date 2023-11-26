@@ -59,8 +59,8 @@ def csv_to_dict(filepath):
                 d[str(value)] = key
     return d
 
-file_path = "./Rus_Ukr_war_data.json"
-dict_path = './Rus_Ukr_war_data_ids.csv'
+file_path = "IRWA_data_2023/Rus_Ukr_war_data.json"
+dict_path = 'IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
 
 
 # file_path = "../../tweets-data-who.json"
