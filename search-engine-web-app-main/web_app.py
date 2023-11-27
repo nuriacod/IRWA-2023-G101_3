@@ -59,8 +59,8 @@ def csv_to_dict(filepath):
                 d[str(value)] = key
     return d
 
-file_path = "IRWA_data_2023/Rus_Ukr_war_data.json"
-dict_path = 'IRWA_data_2023/Rus_Ukr_war_data_ids.csv'
+file_path = "./Rus_Ukr_war_data.json"
+dict_path = './Rus_Ukr_war_data_ids.csv'
 
 
 # file_path = "../../tweets-data-who.json"
@@ -95,15 +95,19 @@ def index():
     return render_template('index.html', page_title="Welcome")
 
 
-@app.route('/search', methods=['POST'])
+@app.route('/search', methods=['GET', 'POST'], endpoint='search_results')
 def search_form_post():
-    search_query = request.form['search-query']
-
-    session['last_search_query'] = search_query
+    if request.method == 'POST':
+        search_query = request.form['search-query']
+        session['last_search_query'] = search_query
+    else:
+        search_query = session['last_search_query']
 
     search_id = analytics_data.save_query_terms(search_query)
 
     results = search_engine.search(search_query, search_id, corpus, list_of_tweets)
+    #for tweet in results:
+    #    tweet.format_date()
 
     found_count = len(results)
     session['last_found_count'] = found_count
@@ -111,7 +115,6 @@ def search_form_post():
     print(session)
 
     return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count)
-
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():

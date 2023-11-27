@@ -1,16 +1,32 @@
+<script>
+    function goBack() {
+        // Redirect to the /search route
+        window.location.href = "/search";
+    }
+</script>
+
 {% extends "base.html" %}
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block content %}
     <div class="tweet-container">
         <div class="tweet-go-back">
-            <a href="#" onclick="history.back()">Go Back</a>
+            <a href="javascript:void(0);" onclick="goBack();" class="go-back-button">Go Back</a>
         </div>
         <div class="tweet-header">
             <h2 class="tweet-title">{{ tweet.title }}</h2>
-            <p class="tweet-date">{{ tweet.doc_date }}</p>
-        </div>
-        <div class="tweet-description">
-            {{ tweet.description }}
+            <p class="tweet-date small">{{ tweet.doc_date }}</p>
+            <div class="tweet-description">
+                {{ tweet.description }}
+            </div>
+            <br>
+            <p class="tweet-likes small"><span class="heart-icon">&#x2665;</span> Likes: {{ tweet.likes }}</p>
+            <p class="tweet-retweets small">Retweets: {{ tweet.retweets }}</p>
+            <div class="tweet-hashtags small">Hashtags: 
+                {% for hashtag in tweet.hashtags %}
+                    #{{ hashtag }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            <p class="tweet-url small">URL: <a href="{{ tweet.url }}" target="_blank">{{ tweet.url|default('No URL found') }}</a></p>
         </div>
     </div>
 {% endblock %}

@@ -74,9 +74,13 @@ This will load the python virtualenv for the project.
 
 ### Installing Flask and other packages in your virtualenv
 ```bash
-pip install Flask pandas nltk faker
+pip install Flask pandas nltk faker httpagentparser
 ```
 
+### Installing other needed libraries for the project
+```bash
+pip install nltk wordcloud matplotlib pandas numpy scikit-learn gensim
+```
 Enjoy!
 
 
