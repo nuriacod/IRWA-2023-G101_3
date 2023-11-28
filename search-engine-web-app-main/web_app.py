@@ -218,17 +218,20 @@ def stats():
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     visited_docs = []
-    print(analytics_data.fact_clicks.keys())
     for doc_id in analytics_data.fact_clicks.keys():
         d: Document = corpus[int(doc_id)]
         doc = ClickedDoc(doc_id, d.description, analytics_data.fact_clicks[doc_id])
-        visited_docs.append(doc)
+        visited_docs.append({
+            'doc_id': doc.doc_id,
+            'description': doc.description,
+            'counter': doc.counter
+        })
 
     # simulate sort by ranking
-    visited_docs.sort(key=lambda doc: doc.counter, reverse=True)
+    visited_docs.sort(key=lambda doc: doc['counter'], reverse=True)
 
-    for doc in visited_docs: print(doc)
     return render_template('dashboard.html', visited_docs=visited_docs)
+
 
 
 @app.route('/sentiment')
