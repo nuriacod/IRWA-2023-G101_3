@@ -6,7 +6,7 @@ class Document:
     Original corpus data as an object
     """
 
-    def __init__(self, id, title, description, doc_date, likes, retweets, url, hashtags):
+    def __init__(self, id, title, description, doc_date, likes, retweets, url, hashtags,followers_count,verified):
         self.id = id
         self.title = title
         self.description = description
@@ -15,6 +15,8 @@ class Document:
         self.retweets = retweets
         self.url = url
         self.hashtags = hashtags
+        self.followers_count = followers_count
+        self.verified = verified
 
     def to_json(self):
         return self.__dict__

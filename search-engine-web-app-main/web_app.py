@@ -75,7 +75,7 @@ global tf, idf, df, tf_idf_index, our_score, list_of_tweets
 tweet_to_doc = csv_to_dict(dict_path) 
 
 list_of_tweets = create_list_of_tweets(file_path, tweet_to_doc)
-print(list_of_tweets[0])
+# print(list_of_tweets[0])
 
 # Home URL "/"
 @app.route('/')
@@ -111,14 +111,15 @@ def index():
 
     print(session)
 
-    return render_template('index.html', page_title="Welcome")
+    return render_template('index.html', page_title="Welcome",session = agent)
 
 ##AQUI INTENTO FER TRACK DELS CLICKS PERO CREC Q NO FUNCIONA PERQ EL PRINT NO FUNCIONA
 @app.route('/track-click', methods=['POST'])
 def track_click():
     # Collect click data
     click_data = request.get_json()
-
+    print('-----> JSON click')
+    print(click_data)
     # Create Click instance
     click_instance = Click(
         session_id='some_session_id',
@@ -128,6 +129,7 @@ def track_click():
         rank=click_data['rank'],
         dwell_time=click_data['dwell_time'],
     )
+    
 
     print(click_instance)
     # Store click_instance in-memory or database
@@ -139,15 +141,18 @@ def track_click():
 def search_form_post():
     if request.method == 'POST':
         search_query = request.form['search-query']
+        search_type = request.form['search-type']
         session['last_search_query'] = search_query
+        session['last_search_type'] = search_type
+        
     else:
         search_query = session['last_search_query']
+        search_type = session['last_search_type']
 
     search_id = analytics_data.save_query_terms(search_query)
 
-    results = search_engine.search(search_query, search_id, corpus, list_of_tweets)
-    #for tweet in results:
-    #    tweet.format_date()
+    print(search_query)
+    results = search_engine.search(search_query, search_id, corpus, list_of_tweets,search_type)
 
     found_count = len(results)
     session['last_found_count'] = found_count
@@ -200,11 +205,13 @@ def stats():
         row: Document = corpus[int(doc_id)]
         count = analytics_data.fact_clicks[doc_id]
         doc = StatsDocument(row.id, row.title, row.description, row.doc_date, row.url, count)
+        print("URL",row.url)
         docs.append(doc)
 
     # simulate sort by ranking
     docs.sort(key=lambda doc: doc.count, reverse=True)
-    return render_template('stats.html', clicks_data=docs)
+    sorted_queries = dict(sorted(analytics_data.fact_queries.items(), key=lambda item: item[1]))
+    return render_template('stats.html', clicks_data=docs, query_data = sorted_queries)
     # ### End replace with your code ###
 
 

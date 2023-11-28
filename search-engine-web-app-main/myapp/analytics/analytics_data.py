@@ -12,16 +12,25 @@ class AnalyticsData:
     fact_clicks = dict([])
 
     # statistics table 2
-    fact_two = dict([])
+    fact_queries = dict([])
 
     # statistics table 3
     fact_three = dict([])
 
     def save_query_terms(self, terms: str) -> int:
         print(self)
+    
+        if terms in self.fact_queries.keys():
+            self.fact_queries[terms] += 1
+        else: 
+            self.fact_queries[terms] = 1
+                
         # AFegir un diccionari o algo per controlar les queries 
         #que no es repeteixin ids i si una query es repeteix donar li el que li pertoca
         return random.randint(0, 100000)
+
+## vegades per query 
+## clicks per query 
 
 
 class ClickedDoc:

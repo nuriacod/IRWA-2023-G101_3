@@ -12,12 +12,12 @@
         <a href="javascript:void(0);" onclick="goBack();" class="go-back-button">Go Back</a>
     </div>
     <br>
-    Found <strong>{{ found_counter }}</strong> results...
+    Found <strong>{{ found_counter }}</strong> results
     <hr>
     {% for item in results_list %}
         <div class="result-item">
             <div class="doc-title">
-                <a href="{{ item.url }}">{{ item.title|default("No title available") }}...</a>
+                <a href="{{ item.url }}">{{ item.title|default("No title available") }}</a>
             </div>
             <div class="metadata">
                 <div class="doc-date small">{{ item.doc_date }}</div>

@@ -33,18 +33,21 @@ def create_index_tfidf(lines, num_documents):
     # Document frequencies of terms in the corpus
     df = defaultdict(int)  
     idf = defaultdict(float)
-
+    our_score = defaultdict(float)
     for document in lines: 
         tweet_text = preprocessing(document.description,{},False)
         tweet_text = tweet_text.split(' ')
         tweet_text = [word for word in tweet_text if word != ""]   ## 
-        # print(tweet_text)
         
-        # doc_xxxx
         doc_id = document.id
+        tweet_likes = document.likes
+        tweet_rts = document.retweets
+        follower_count = document.followers_count
+        verified = document.verified == 'True'
 
-        #Compute the score for the current doc based on tweet likes, retweets, etc.
         #our_score[doc_id] = (tweet_likes+ tweet_rts)*0.3 + (follower_count+ verified)*0.2
+        #Compute the score for the current doc based on tweet likes, retweets, etc.
+        our_score[doc_id] = (tweet_likes+ tweet_rts)*0.3 + (follower_count+ verified)*0.2
 
         ## create the index for the *current page* and store it in current_page_index
 
@@ -85,10 +88,10 @@ def create_index_tfidf(lines, num_documents):
             idf[term] = np.round(np.log(float(num_documents/df[term])), 4)
             # ret
         
-        save_dicts(index_file, index, tf, df, idf)
-    return index, tf, df, idf
+        save_dicts(index_file, index, tf, df, idf,our_score)
+    return index, tf, df, idf, our_score
             
-def rank_documents(terms, docs, index, idf, tf):
+def rank_documents(terms, docs, index, idf, tf,our_score):
     """
     Perform the ranking of the results of a search based on the tf-idf weights
 
@@ -129,31 +132,50 @@ def rank_documents(terms, docs, index, idf, tf):
         for doc_index, (doc, postings) in enumerate(index[term]):
             if doc in docs:
                 doc_vectors[doc][termIndex] = tf[term][doc_index] * idf[term]
- 
-    # Calculate the score of each doc(cosine similarity between queyVector and each docVector)
-    doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
-    doc_scores.sort(reverse=True)
-    result_docs = [x[1] for x in doc_scores]
-    #print('************** TF-IDF SCORES', doc_scores)
+    if query_vector:
+        # Calculate the score of each doc(cosine similarity between queyVector and each docVector)
+        doc_scores=[[np.dot(curDocVec, query_vector), doc] for doc, curDocVec in doc_vectors.items() ]
+        doc_scores.sort(reverse=True)
+        result_docs = [x[1] for x in doc_scores]
 
-    if len(result_docs) == 0:
-        print("No results found with tf-idf, try again")
+        #Normalize each of the values in the sum:
+        min_dot_product = min([np.dot(curDocVec, query_vector) for curDocVec in doc_vectors.values()])
+        max_dot_product = max([np.dot(curDocVec, query_vector) for curDocVec in doc_vectors.values()])
 
-    #print ('\n'.join(result_docs), '\n')
-    return result_docs
-
-def search_in_corpus(query, corpus, search_id):
-    # 1. create create_tfidf_index
+        percentile_to_consider = 90
+        min_our_score = min([our_score[doc] for doc in our_score.keys()])
+        max_our_score = np.percentile([our_score[doc] for doc in our_score.keys()], percentile_to_consider)
+        
+        #MIN-MAX NORMALIZATION
+        our_doc_scores=[[0.6 * ((np.dot(curDocVec, query_vector) - min_dot_product) / (max_dot_product - min_dot_product)) +0.4 * np.clip(((our_score[doc] - min_our_score) / (max_our_score - min_our_score)), 0, 1),doc] for doc, curDocVec in doc_vectors.items() ]
+        
+        our_doc_scores.sort(reverse=True)
+        #print('************** OUR SCORE', our_doc_scores)
+        our_result_docs = [x[1] for x in our_doc_scores] 
+        
+        if len(result_docs) == 0:
+            print("No results found with tf-idf, try again")
+        if len(our_result_docs) == 0:
+            print("No results found with our scores, try again")
+            exit()
+        return result_docs, our_result_docs
+    else: 
+        print("No results")
+        return [], []
+        
     
+
+def search_in_corpus(query, corpus, search_id,search_type):
+
     res = []
     size = len(corpus)
     ll = list(corpus.values())
 
     if file_exists(index_file):
-        index, tf, df, idf = load_dicts(index_file)
+        index, tf, df, idf,our_score = load_dicts(index_file)
     else: 
         print('creating tfidf ....')
-        index, tf, df, idf = create_index_tfidf(ll, size)
+        index, tf, df, idf,our_score = create_index_tfidf(ll, size)
     
 
     # 2. apply ranking
@@ -162,7 +184,6 @@ def search_in_corpus(query, corpus, search_id):
 
     query = preprocessing(query, {}, False)
     query=query.split()
-    print('QUERY -->', query)
     docs = set()
     first_term = True
     for term in query:
@@ -186,11 +207,15 @@ def search_in_corpus(query, corpus, search_id):
             #term is not in index
             pass
     docs = list(docs)
-    ranked_docs = rank_documents(query, docs, index, idf, tf)
-    print(len(ranked_docs))
-    #print('RANKED DOCS ----->',ranked_docs)
-    
-    for idx, doc in enumerate(ranked_docs):
+    ranked_docs,our_result_docs = rank_documents(query, docs, index, idf, tf,our_score)
+
+    if search_type == "tf_idf": 
+        ranked_docs_final = ranked_docs
+        
+    elif search_type == "our_score":
+        ranked_docs_final =our_result_docs
+        
+    for idx, doc in enumerate(ranked_docs_final):
         item = corpus[doc]
         res.append(ResultItem(item.id, item.title, item.description, item.doc_date,
                             "doc_details?id={}&search_id={}&param2=2".format(item.id, search_id), idx))

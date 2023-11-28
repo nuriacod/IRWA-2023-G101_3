@@ -7,9 +7,25 @@
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/custom.css') }}">
     <title>{% block page_title %}{% endblock %} - IRWA Search Engine</title>
     {% block header %}{% endblock %}
+    <script>
+        function toggleMenu() {
+            const menu = document.querySelector('.menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+
 </head>
 <body>
+<div class="menu">
+    <a href="/">Search</a>
+    <a href="/stats">Stats</a>
+    <a href="/dashboard">Dashbords</a>
+    <!-- Add more links as needed -->
+</div>
 <div class="container">
+
+
+
     <div class='header text-center'>
         <a href="/">
             <img src="{{ url_for('static', filename='logo.png') }}" width="100" alt="UPF logo"/>
@@ -26,4 +42,6 @@
     <div class='centered'> 24952 - Information Retrieval and Web Analytics</div>
 </div>
 </body>
+
 </html>
+

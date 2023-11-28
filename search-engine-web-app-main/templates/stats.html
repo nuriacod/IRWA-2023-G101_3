@@ -2,12 +2,24 @@
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block content %}
     <h2>Quick Stats</h2>
-    <h4>Clicked docs:</h4>
+    <h4>Top Clicked docs:</h4>
 
     {% for doc in clicks_data %}
         <div class="pb-3">
             <div class="">
-                <span class="text-dark"> ({{ doc.count }} visits) </span> — id: {{ doc.id }} — {{ doc.description }}
+                <span class="text-dark"> ({{ doc.count }} visits) </span> — <a href="{{ doc.url }}">{{ doc.title }}</a> — {{ doc.description }}
+                
+            </div>
+        </div>
+        <hr>
+    {% endfor %}
+
+    <h4>Top Queries:</h4>
+
+    {% for key,value in query_data.items() %}
+        <div class="pb-3">
+            <div class="">
+                <span class="text-dark"> ({{value}} visits) {{ key }} </span> 
             </div>
         </div>
         <hr>

@@ -32,7 +32,7 @@ def build_demo_results(corpus: dict, search_id):
 class SearchEngine:
     """educational search engine"""
 
-    def search(self, search_query, search_id, corpus, list_of_tweets):
+    def search(self, search_query, search_id, corpus, list_of_tweets,search_type):
         print("Search query:", search_query)
 
         results = []
@@ -43,7 +43,7 @@ class SearchEngine:
         # replace with call to search algorithm
 
         #list_of_tweets = []
-        results = search_in_corpus(search_query, corpus, search_id)
+        results = search_in_corpus(search_query, corpus, search_id,search_type)
         ##### your code here #####
 
         return results

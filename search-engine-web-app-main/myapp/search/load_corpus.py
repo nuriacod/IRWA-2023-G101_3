@@ -183,7 +183,7 @@ def _load_corpus_as_dataframe(path):
                  "retweet_count": "Retweets", "lang": "Language"})
 
     # select only interesting columns
-    filter_columns = ["Id", "Tweet", "Username", "Date", "Hashtags", "Likes", "Retweets", "Url", "Language"]
+    filter_columns = ["Id", "Tweet", "Username", "Date", "Hashtags", "Likes", "Retweets", "Url", "Language","followers_count","verified"]
     corpus = corpus[filter_columns]
     return corpus
 
@@ -193,8 +193,8 @@ def _load_tweets_as_dataframe(json_data):
     # parse entities as new columns
     data = pd.concat([data.drop(['entities'], axis=1), data['entities'].apply(pd.Series)], axis=1)
     # parse user data as new columns and rename some columns to prevent duplicate column names
-    data = pd.concat([data.drop(['user'], axis=1), data['user'].apply(pd.Series).rename(
-        columns={"created_at": "user_created_at", "id": "user_id", "id_str": "user_id_str", "lang": "user_lang"})],
+    data = pd.concat([data.drop(['user'], axis=1), data['user'].apply(pd.Series).rename( 
+        columns={"created_at": "user_created_at", "id": "user_id", "id_str": "user_id_str", "lang": "user_lang","verified":"verified","followers_count":"followers_count"})],
                      axis=1)
     return data
 
@@ -265,10 +265,9 @@ def load_tweets_as_dataframe3(json_data):
 
 
 def _row_to_doc_dict(row: pd.Series):
-    
-    _corpus[row['Id']] = Document(row['Id'], row['Tweet'][0:30], row['Tweet'], row['Date'], row['Likes'],
+    _corpus[row['Id']] = Document(row['Id'], row['Tweet'][:30] + row['Tweet'][30:row['Tweet'].find(' ', 30)], row['Tweet'], row['Date'], row['Likes'],
                                   row['Retweets'],
-                                  row['Url'], row['Hashtags'])
+                                  row['Url'], row['Hashtags'],row["followers_count"],row["verified"])
     
 ##canviar la funció get fields per que retorni un diccionary amb l'estructura d'aqui dalt 
 

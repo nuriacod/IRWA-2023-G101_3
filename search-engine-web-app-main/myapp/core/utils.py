@@ -46,7 +46,7 @@ def load_json_file(path):
         for line in fp.readlines():
             text_data.append(json.loads(line))
 
-    print('****\n',text_data[0])
+
             
         
     # Parse the string into a JSON object
@@ -68,14 +68,16 @@ def load_dicts(filename):
         tf = pickle.load(file)
         df = pickle.load(file)
         idf = pickle.load(file)
-    return index, tf, df, idf
+        our_score = pickle.load(file)
+    return index, tf, df, idf,our_score
 
 
 # Function to save dictionaries to a pickle file
-def save_dicts(filename, index, tf, df, idf):
+def save_dicts(filename, index, tf, df, idf,our_socore):
     with open(filename, 'wb') as file:
         pickle.dump(index, file)
         pickle.dump(tf, file)
         pickle.dump(df, file)
         pickle.dump(idf, file)
+        pickle.dump(our_socore, file)
 
