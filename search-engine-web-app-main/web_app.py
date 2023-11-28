@@ -11,7 +11,7 @@ from flask import request
 
 from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
 from myapp.search.load_corpus import load_corpus, create_list_of_tweets
-from myapp.search.objects import Document, StatsDocument
+from myapp.search.objects import Document, StatsDocument, Session, Click, RequestData
 from myapp.search.search_engine import SearchEngine
 
 
@@ -27,6 +27,10 @@ JSONEncoder.default = _default
 
 # instantiate the Flask application
 app = Flask(__name__)
+
+sessions = {}
+clicks = []
+requests_data = []
 
 # random 'secret_key' is used for persisting data in secure cookie
 app.secret_key = 'afgsreg86sr897b6st8b76va8er76fcs6g8d7'
@@ -78,6 +82,21 @@ print(list_of_tweets[0])
 def index():
     print("starting home url /...")
 
+    ##AQUI CREO INSTANCIA DEL HTTP REQUEST DATA ---> CREC QUE FUNCIONA
+    #Collect HTTP Requests data
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+
+    print(request_data)
+
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
+
     # flask server creates a session by persisting a cookie in the user's browser.
     # the 'session' object keeps data between multiple requests
     session['some_var'] = "IRWA 2021 home"
@@ -94,6 +113,27 @@ def index():
 
     return render_template('index.html', page_title="Welcome")
 
+##AQUI INTENTO FER TRACK DELS CLICKS PERO CREC Q NO FUNCIONA PERQ EL PRINT NO FUNCIONA
+@app.route('/track-click', methods=['POST'])
+def track_click():
+    # Collect click data
+    click_data = request.get_json()
+
+    # Create Click instance
+    click_instance = Click(
+        session_id='some_session_id',
+        action=click_data['action'],
+        query=click_data['query'],
+        document_id=click_data['document_id'],
+        rank=click_data['rank'],
+        dwell_time=click_data['dwell_time'],
+    )
+
+    print(click_instance)
+    # Store click_instance in-memory or database
+    clicks.append(click_instance)
+
+    return "Click tracked!"
 
 @app.route('/search', methods=['GET', 'POST'], endpoint='search_results')
 def search_form_post():

@@ -1,6 +1,17 @@
+<script>
+    function goBack() {
+        // Redirect to the /search route
+        window.location.href = "/";
+    }
+</script>
+
 {% extends "base.html" %}
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block content %}
+    <div class="tweet-go-back">
+        <a href="javascript:void(0);" onclick="goBack();" class="go-back-button">Go Back</a>
+    </div>
+    <br>
     Found <strong>{{ found_counter }}</strong> results...
     <hr>
     {% for item in results_list %}

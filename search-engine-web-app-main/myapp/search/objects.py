@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from dateutil import parser
 
 class Document:
     """
@@ -74,3 +73,53 @@ class ResultItem:
 
         # Update the doc_date attribute with the formatted date
         self.doc_date = formatted_date
+
+class Session:
+    def __init__(self, session_id, user_agent, ip_address, country):
+        self.session_id = session_id
+        self.user_agent = user_agent
+        self.ip_address = ip_address
+        self.country = country
+        self.clicks = []
+        self.requests = []
+
+class Click:
+    def __init__(self, session_id, action, query, document_id, rank, dwell_time):
+        self.session_id = session_id
+        self.action = action
+        self.query = query
+        self.document_id = document_id
+        self.rank = rank
+        self.dwell_time = dwell_time
+
+class RequestData:
+    def __init__(self, session_id, method, path, user_agent):
+        self.session_id = session_id
+        self.method = method
+        self.path = path
+        self.user_agent = user_agent
+        # Add more relevant data
+
+class Query:
+    def __init__(self, session_id, terms, order):
+        self.session_id = session_id
+        self.terms = terms
+        self.order = order
+
+class Result:
+    def __init__(self, session_id, query, document_id, rank):
+        self.session_id = session_id
+        self.query = query
+        self.document_id = document_id
+        self.rank = rank
+
+class UserContext:
+    def __init__(self, session_id, browser, os, time_of_day, date, ip_address, country, city=None):
+        self.session_id = session_id
+        self.browser = browser
+        self.os = os
+        self.time_of_day = time_of_day
+        self.date = date
+        self.ip_address = ip_address
+        self.country = country
+        self.city = city
