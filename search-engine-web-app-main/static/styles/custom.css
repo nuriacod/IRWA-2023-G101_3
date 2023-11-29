@@ -11,10 +11,10 @@
 }
 
 .userInfoBar {
-    width: 300px;
+    width: 250px;
     background-color: rgb(110, 195, 140);
     color: white;
-    padding: 50px;
+    padding: 47px;
     box-sizing: border-box;
     position: fixed;
     height: 100%;
