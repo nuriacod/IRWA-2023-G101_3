@@ -11,19 +11,36 @@ class AnalyticsData:
     # fact_clicks is a dictionary with the click counters: key = doc id | value = click counter
     fact_clicks = dict([])
 
-    # statistics table 2
+    # Dictionary with the query counter 
     fact_queries = dict([])
 
-    # statistics table 3
-    fact_three = dict([])
+    # Fer un diccionary per terms (key = term| value = counter)
+    fact_terms = dict([])
+    
+    # Fer un diccionary per search engine
+    fact_se_type = dict([])
+    
+    ####(acabar de revisar perque ara cada cop que fas go back li suma a tots i no hauria
+    ### Pude podem mirar de posar un if dins de la funcio de /search per controlar això
 
-    def save_query_terms(self, terms: str) -> int:
-        print(self)
+    def save_query_terms(self, terms: str,type: str) -> int:
+
+        if type in self.fact_se_type.keys():
+            self.fact_se_type[type] += 1
+        else: 
+            self.fact_se_type[type] = 1
     
         if terms in self.fact_queries.keys():
             self.fact_queries[terms] += 1
         else: 
             self.fact_queries[terms] = 1
+            
+        for term in terms.split(): 
+            if term in self.fact_terms.keys():
+                self.fact_terms[term] += 1
+            else: 
+                self.fact_terms[term] = 1
+            
                 
         # AFegir un diccionari o algo per controlar les queries 
         #que no es repeteixin ids i si una query es repeteix donar li el que li pertoca

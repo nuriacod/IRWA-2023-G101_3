@@ -1,3 +1,4 @@
+import json
 import os
 from json import JSONEncoder
 import csv
@@ -149,9 +150,10 @@ def search_form_post():
         search_query = session['last_search_query']
         search_type = session['last_search_type']
 
-    search_id = analytics_data.save_query_terms(search_query)
+    search_id = analytics_data.save_query_terms(search_query,search_type)
 
     print(search_query)
+    print("Type",search_type)
     results = search_engine.search(search_query, search_id, corpus, list_of_tweets,search_type)
 
     found_count = len(results)
@@ -226,11 +228,14 @@ def dashboard():
             'description': doc.description,
             'counter': doc.counter
         })
+    
 
     # simulate sort by ranking
     visited_docs.sort(key=lambda doc: doc['counter'], reverse=True)
-
-    return render_template('dashboard.html', visited_docs=visited_docs)
+    headers = ['Search engine', 'Times used']
+    search_type = [[key, value] for key, value in analytics_data.fact_se_type.items()]
+    search_type.insert(0, headers)
+    return render_template('dashboard.html', visited_docs=visited_docs,term_freq = analytics_data.fact_terms,search_type = search_type)
 
 
 

@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
 <html>
 <head>
     <meta charset="UTF-8">
@@ -15,8 +17,8 @@
             Type a sentence, click on the submit button and wait for your prediction.
         </p>
         <form method="POST" onSubmit='return validate();' action="sentiment" class='form'>
-            <input name="text" class="search-text" autofocus="autofocus">
-            <input type="submit" onclick='this.form.submit();'>
+            <input name="text" class="form-control me-2" autofocus="autofocus">
+            <input type="submit" class="btn btn-primary"onclick='this.form.submit();'>
         </form>
         <br>
         <br>
@@ -39,3 +41,4 @@
 </div>
 </body>
 </html>
+{% endblock %}

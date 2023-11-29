@@ -6,6 +6,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.min.js"
             integrity="sha512-tMabqarPtykgDtdtSqCL3uLVM0gS1ZkUAVhRFu1vSEFgvB73niFQWJuvviDyBGBH22Lcau4rHB5p2K2T0Xvr6Q=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/wordcloud@2.51.3/build/wordcloud2.min.js"></script>-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
 {% endblock %}
 
 {% block content %}
@@ -77,10 +80,62 @@
             </div>
         </div>
         <hr>
+
     {% endfor %}
 
+<!-- 
+    <h4>Word Cloud</h4>
+    <canvas id="wordCloud" width="400" height="400"></canvas>
+    
+    <script>
+        // Your word frequency dictionary
+        const wordFrequency = {{ your_word_frequency_data | safe }};
 
+        // Create an array of objects for wordcloud2.js
+        const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => ({ text: word, weight: count }));
 
+        // Set up wordcloud options
+        const wordCloudOptions = {
+            list: wordCloudData,
+            gridSize: 8, // Adjust as needed
+            weightFactor: 5, // Adjust as needed
+            fontFamily: 'Arial',
+            color: 'random-dark',
+            backgroundColor: 'white',
+            drawOutOfBound: false,
+        };
+
+        // Render the word cloud
+        const wordCloudCanvas = document.getElementById('wordCloud');
+        wordcloud2(wordCloudCanvas, wordCloudOptions);
+    </script>
+
+  -->
+    <h4>Pie Chart</h4>
+
+    <script>
+        const type_list = {{ search_type | safe }};
+    </script>
+
+    <div id="piechart" class= "piechart-container" ></div>
+    <script type="text/javascript">
+        // Load google charts
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        // Draw the chart and set the chart values
+        function drawChart() {
+        console.log(type_list)
+        var data = google.visualization.arrayToDataTable(type_list);
+        
+        // Optional; add a title and set the width and height of the chart
+        var options = {'title':'Search engine stats', 'width':650, 'height':500};
+
+        // Display the chart inside the <div> element with id="piechart"
+        var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+        chart.draw(data, options);
+        }
+    </script>
     <script>
         // another example
         const data2 = {
