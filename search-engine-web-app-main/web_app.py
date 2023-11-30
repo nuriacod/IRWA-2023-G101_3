@@ -153,8 +153,8 @@ def search_form_post():
         search_type = session['last_search_type']
 
     
-
-   
+  
+    
     results = search_engine.search(search_query, search_id, corpus, list_of_tweets,search_type)
 
     found_count = len(results)
@@ -211,13 +211,12 @@ def stats():
     )
     # Store request_data in-memory or database
     requests_data.append(request_data)
-    """
-    Show simple statistics example. ### Replace with dashboard ###
-    :return:
-    """
+
 
     docs = []
-    # ### Start replace with your code ###
+    
+  
+    
 
     for doc_id in analytics_data.fact_clicks:
         row: Document = corpus[int(doc_id)]
@@ -263,6 +262,10 @@ def dashboard():
     headers = ['Search engine', 'Times used']
     search_type = [[key, value] for key, value in analytics_data.fact_se_type.items()]
     search_type.insert(0, headers)
+
+    ## BAR CHART TOP TERMS 
+    
+    
     return render_template('dashboard.html', visited_docs=visited_docs,term_freq = analytics_data.fact_terms,search_type = search_type)
 
 
