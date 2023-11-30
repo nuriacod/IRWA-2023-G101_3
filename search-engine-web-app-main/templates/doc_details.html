@@ -1,4 +1,26 @@
 <script>
+
+    // Variable to store the start time
+    let startTime;
+
+    function startTimer() {
+        startTime = new Date();
+    }
+
+    function stopTimer() {
+        if (startTime) {
+            // Calculate the elapsed time
+            const endTime = new Date();
+            const elapsedTime = (endTime - startTime) / 1000; // in seconds
+
+            // Display the elapsed time (you can modify this part based on your needs)
+            alert(`Time Elapsed: ${elapsedTime} seconds`);
+
+            // Redirect to the /search route
+            window.location.href = "/search";
+        }
+    }
+    
     function goBack() {
         // Redirect to the /search route
         window.location.href = "/search";

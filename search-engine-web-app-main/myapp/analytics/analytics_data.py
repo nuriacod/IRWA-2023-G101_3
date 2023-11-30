@@ -1,12 +1,36 @@
 import json
 import random
+import pickle
+import os
+filename = "session_variables.pkl"
+def file_exists(filename):
+        return os.path.exists(filename)
+
+ # Function to load dictionaries from a pickle file
+def load_dicts(filename):
+    with open(filename, 'rb') as file:
+        fact_clicks = pickle.load(file) 
+        fact_queries = pickle.load(file)
+        fact_terms = pickle.load(file)
+        fact_se_type = pickle.load(file)    
+    return fact_clicks, fact_queries, fact_terms, fact_se_type
 
 
+# Function to save dictionaries to a pickle file
+def save_dicts(fact_click, fact_queries, fact_terms, fact_se_type):
+    with open(filename, 'wb') as file:
+        pickle.dump(fact_click, file)
+        pickle.dump(fact_queries, file)
+        pickle.dump(fact_terms, file)
+        pickle.dump(fact_se_type, file)
+        
 class AnalyticsData:
+
     """
     An in memory persistence object.
     Declare more variables to hold analytics tables.
     """
+    filename = filename
     # statistics table 1
     # fact_clicks is a dictionary with the click counters: key = doc id | value = click counter
     fact_clicks = dict([])
@@ -20,8 +44,10 @@ class AnalyticsData:
     # Fer un diccionary per search engine
     fact_se_type = dict([])
     
-    ####(acabar de revisar perque ara cada cop que fas go back li suma a tots i no hauria
-    ### Pude podem mirar de posar un if dins de la funcio de /search per controlar això
+    if file_exists(filename): 
+        fact_clicks, fact_queries, fact_terms, fact_se_type= load_dicts(filename)
+        
+
 
     def save_query_terms(self, terms: str,type: str) -> int:
 
@@ -29,7 +55,7 @@ class AnalyticsData:
             self.fact_se_type[type] += 1
         else: 
             self.fact_se_type[type] = 1
-    
+
         if terms in self.fact_queries.keys():
             self.fact_queries[terms] += 1
         else: 
@@ -41,13 +67,17 @@ class AnalyticsData:
             else: 
                 self.fact_terms[term] = 1
             
-                
-        # AFegir un diccionari o algo per controlar les queries 
-        #que no es repeteixin ids i si una query es repeteix donar li el que li pertoca
         return random.randint(0, 100000)
 
-## vegades per query 
-## clicks per query 
+    
+    def save_click(self, clicked_doc_id):
+        if clicked_doc_id in self.fact_clicks.keys():
+            self.fact_clicks[clicked_doc_id] += 1
+        else: 
+            self.fact_clicks[clicked_doc_id] = 1
+            
+
+
 
 
 class ClickedDoc:

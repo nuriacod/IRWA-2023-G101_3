@@ -2,7 +2,8 @@ import json
 import os
 from json import JSONEncoder
 import csv
-
+import time
+import pickle
 
 # pip install httpagentparser
 import httpagentparser  # for getting the user agent as json
@@ -10,10 +11,12 @@ import nltk
 from flask import Flask, render_template, session
 from flask import request
 
-from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
+from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc, save_dicts,file_exists
 from myapp.search.load_corpus import load_corpus, create_list_of_tweets
 from myapp.search.objects import Document, StatsDocument, Session, Click, RequestData
 from myapp.search.search_engine import SearchEngine
+
+
 
 
 # *** for using method to_json in objects ***
@@ -29,9 +32,13 @@ JSONEncoder.default = _default
 # instantiate the Flask application
 app = Flask(__name__)
 
+
+
 sessions = {}
 clicks = []
 requests_data = []
+
+
 
 # random 'secret_key' is used for persisting data in secure cookie
 app.secret_key = 'afgsreg86sr897b6st8b76va8er76fcs6g8d7'
@@ -93,10 +100,11 @@ def index():
         # Add more relevant data
     )
 
-    print(request_data)
 
     # Store request_data in-memory or database
     requests_data.append(request_data)
+    
+    ### Guardar request data 
 
     # flask server creates a session by persisting a cookie in the user's browser.
     # the 'session' object keeps data between multiple requests
@@ -111,49 +119,42 @@ def index():
     print("Remote IP: {} - JSON user browser {}".format(user_ip, agent))
 
     print(session)
+    #### GUARDAR SESSION DATA
 
     return render_template('index.html', page_title="Welcome",session = agent)
 
-##AQUI INTENTO FER TRACK DELS CLICKS PERO CREC Q NO FUNCIONA PERQ EL PRINT NO FUNCIONA
-@app.route('/track-click', methods=['POST'])
-def track_click():
-    # Collect click data
-    click_data = request.get_json()
-    print('-----> JSON click')
-    print(click_data)
-    # Create Click instance
-    click_instance = Click(
-        session_id='some_session_id',
-        action=click_data['action'],
-        query=click_data['query'],
-        document_id=click_data['document_id'],
-        rank=click_data['rank'],
-        dwell_time=click_data['dwell_time'],
-    )
-    
-
-    print(click_instance)
-    # Store click_instance in-memory or database
-    clicks.append(click_instance)
-
-    return "Click tracked!"
 
 @app.route('/search', methods=['GET', 'POST'], endpoint='search_results')
 def search_form_post():
+    
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+    save_data()
+
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     if request.method == 'POST':
         search_query = request.form['search-query']
         search_type = request.form['search-type']
         session['last_search_query'] = search_query
         session['last_search_type'] = search_type
+        search_id = analytics_data.save_query_terms(search_query,search_type)
+        session['last_search_id']= search_id
+        
         
     else:
+        search_id = session['last_search_id']
         search_query = session['last_search_query']
         search_type = session['last_search_type']
 
-    search_id = analytics_data.save_query_terms(search_query,search_type)
+    
 
-    print(search_query)
-    print("Type",search_type)
+   
     results = search_engine.search(search_query, search_id, corpus, list_of_tweets,search_type)
 
     found_count = len(results)
@@ -165,6 +166,15 @@ def search_form_post():
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     # getting request parameters:
     # user = request.args.get('user')
 
@@ -181,12 +191,9 @@ def doc_details():
     p1 = int(request.args["search_id"])  # transform to Integer
     p2 = int(request.args["param2"])  # transform to Integer
     print("click in id={}".format(clicked_doc_id))
-
     # store data in statistics table 1
-    if clicked_doc_id in analytics_data.fact_clicks.keys():
-        analytics_data.fact_clicks[clicked_doc_id] += 1
-    else:
-        analytics_data.fact_clicks[clicked_doc_id] = 1
+    analytics_data.save_click(clicked_doc_id)
+    
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
 
@@ -195,6 +202,15 @@ def doc_details():
 
 @app.route('/stats', methods=['GET'])
 def stats():
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     """
     Show simple statistics example. ### Replace with dashboard ###
     :return:
@@ -219,6 +235,18 @@ def stats():
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+
+    print(request_data.path)
+
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     visited_docs = []
     for doc_id in analytics_data.fact_clicks.keys():
         d: Document = corpus[int(doc_id)]
@@ -241,11 +269,35 @@ def dashboard():
 
 @app.route('/sentiment')
 def sentiment_form():
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+
+    print(request_data.path)
+
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     return render_template('sentiment.html')
 
 
 @app.route('/sentiment', methods=['POST'])
 def sentiment_form_post():
+    request_data = RequestData(
+        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        method=request.method,
+        path=request.path,
+        user_agent=request.headers.get('User-Agent'),
+        # Add more relevant data
+    )
+
+    print(request_data.path)
+
+    # Store request_data in-memory or database
+    requests_data.append(request_data)
     text = request.form['text']
     nltk.download('vader_lexicon')
     from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -254,5 +306,18 @@ def sentiment_form_post():
     return render_template('sentiment.html', score=score)
 
 
+
+def save_data():
+    save_dicts(analytics_data.fact_clicks, analytics_data.fact_queries, analytics_data.fact_terms, analytics_data.fact_se_type)
+    with open("requests.pkl", 'wb') as file:
+        pickle.dump(analytics_data.fact_clicks, file)
+        pickle.dump(analytics_data.fact_queries, file)
+        pickle.dump(analytics_data.fact_terms, file)
+        pickle.dump(analytics_data.fact_se_type, file)
+        
+
 if __name__ == "__main__":
+    # Schedule the function to run every 1 minute
+
     app.run(port=8088, host="0.0.0.0", threaded=False, debug=True)
+    
