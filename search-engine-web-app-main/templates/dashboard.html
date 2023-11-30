@@ -83,34 +83,52 @@
 
     {% endfor %}
 
-   
-    <h4>Word Cloud</h4>
-    <canvas id="wordCloud" width="400" height="400"></canvas>
-    
+
     <script>
-        // Your word frequency dictionary
-        const wordFrequency = {{ your_word_frequency_data | safe }};
-
-        // Create an array of objects for wordcloud2.js
-        const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => ({ text: word, weight: count }));
-
-        // Set up wordcloud options
-        const wordCloudOptions = {
-            list: wordCloudData,
-            gridSize: 8, // Adjust as needed
-            weightFactor: 5, // Adjust as needed
-            fontFamily: 'Arial',
-            color: 'random-dark',
-            backgroundColor: 'white',
-            drawOutOfBound: false,
-        };
-
-        // Render the word cloud
-        const wordCloudCanvas = document.getElementById('wordCloud');
-        wordcloud2(wordCloudCanvas, wordCloudOptions);
+        // 'visited_queries' is the data coming from Python code.
+        const visits_list_query = {{ visited_queries | tojson | safe }};
+        console.log("visited queries: ")
+        console.log(visits_list)
     </script>
 
-  -->
+    <h5>Ranking of Searched Queries</h5>
+    <canvas id="dailyVisitsQuery" width="400" height="400"></canvas>
+
+
+    <script>
+        // use JS map function top get just the tweet ids as labels
+        const visitsLabels_query = visits_list_query.map(a => a.query);
+        const visitsData_query = visits_list_query.map(a => a.counter);
+        const chartData2 = {
+            labels: visitsLabels_query,
+            datasets: [{
+                label: 'Visits count',
+                // data: [65, 59, 80, 81, 56, 55, 40],
+                data: visitsData_query,
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        };
+
+        const ctx2 = document.getElementById('dailyVisitsQuery').getContext('2d');
+
+        // This will render the chart
+        const myChart2 = new Chart(ctx2, {
+            type: 'line',
+            data: chartData2,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+    </script>
+
+
     <h4>Pie Chart</h4>
 
     <script>

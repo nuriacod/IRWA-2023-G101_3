@@ -242,11 +242,12 @@ def dashboard():
         # Add more relevant data
     )
 
-    print(request_data.path)
-
     # Store request_data in-memory or database
     requests_data.append(request_data)
+    
+    
     visited_docs = []
+    visited_queries = []
     for doc_id in analytics_data.fact_clicks.keys():
         d: Document = corpus[int(doc_id)]
         doc = ClickedDoc(doc_id, d.description, analytics_data.fact_clicks[doc_id])
@@ -255,18 +256,28 @@ def dashboard():
             'description': doc.description,
             'counter': doc.counter
         })
-    
+        
+    for query in analytics_data.fact_queries.keys():
+        visited_queries.append({
+            'query': query,
+            'counter': analytics_data.fact_queries[query]
+        })
 
     # simulate sort by ranking
     visited_docs.sort(key=lambda doc: doc['counter'], reverse=True)
+    visited_queries.sort(key=lambda query: query['counter'], reverse=True)
+    
+    # PIE CHART SEARCH ENGINE
     headers = ['Search engine', 'Times used']
     search_type = [[key, value] for key, value in analytics_data.fact_se_type.items()]
     search_type.insert(0, headers)
-
+    
     ## BAR CHART TOP TERMS 
     
     
-    return render_template('dashboard.html', visited_docs=visited_docs,term_freq = analytics_data.fact_terms,search_type = search_type)
+    
+    
+    return render_template('dashboard.html', visited_docs=visited_docs,term_freq = analytics_data.fact_terms,search_type = search_type,visited_queries = visited_queries)
 
 
 
