@@ -12,17 +12,20 @@ def load_dicts(filename):
         fact_clicks = pickle.load(file) 
         fact_queries = pickle.load(file)
         fact_terms = pickle.load(file)
-        fact_se_type = pickle.load(file)    
-    return fact_clicks, fact_queries, fact_terms, fact_se_type
+        fact_se_type = pickle.load(file)
+        fact_browser = pickle.load(file)  
+
+    return fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser
 
 
 # Function to save dictionaries to a pickle file
-def save_dicts(fact_click, fact_queries, fact_terms, fact_se_type):
+def save_dicts(fact_click, fact_queries, fact_terms, fact_se_type, fact_browser):
     with open(filename, 'wb') as file:
         pickle.dump(fact_click, file)
         pickle.dump(fact_queries, file)
         pickle.dump(fact_terms, file)
         pickle.dump(fact_se_type, file)
+        pickle.dump(fact_browser, file)
         
 class AnalyticsData:
 
@@ -41,11 +44,13 @@ class AnalyticsData:
     # Fer un diccionary per terms (key = term| value = counter)
     fact_terms = dict([])
     
-    # Fer un diccionary per search engine
+    # Fer un diccionary per search engine type (tf-idf / our_score)
     fact_se_type = dict([])
+
+    fact_browser = dict([])
     
     if file_exists(filename): 
-        fact_clicks, fact_queries, fact_terms, fact_se_type= load_dicts(filename)
+        fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser = load_dicts(filename)
         
 
 
@@ -75,6 +80,13 @@ class AnalyticsData:
             self.fact_clicks[clicked_doc_id] += 1
         else: 
             self.fact_clicks[clicked_doc_id] = 1
+
+    
+    def save_browser(self, browser):
+        if browser in self.fact_browser.keys():
+            self.fact_browser[browser] += 1
+        else: 
+            self.fact_browser[browser] = 1
             
 
 

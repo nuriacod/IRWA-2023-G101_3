@@ -118,8 +118,13 @@ def index():
 
     print("Remote IP: {} - JSON user browser {}".format(user_ip, agent))
 
-    print(session)
+    #print('agent--->', agent['browser'])
+
     #### GUARDAR SESSION DATA
+    analytics_data.save_browser(agent['browser']['name'])
+
+    print('browser_stats --->', analytics_data.fact_browser)
+
 
     return render_template('index.html', page_title="Welcome",session = agent)
 
@@ -267,13 +272,13 @@ def dashboard():
     headers = ['Search engine', 'Times used']
     search_type = [[key, value] for key, value in analytics_data.fact_se_type.items()]
     search_type.insert(0, headers)
-    
-    ## BAR CHART TOP TERMS 
-    
-    
-    
-    
-    return render_template('dashboard.html', visited_docs=visited_docs,term_freq = analytics_data.fact_terms,search_type = search_type,visited_queries = visited_queries)
+
+    # PIE CHART BROWSER
+    '''headers = ['Browser', 'Times used']
+    browser_type = [[key, value] for key, value in analytics_data.fact_browser.items()]
+    browser_type.insert(0, headers)'''
+
+    return render_template('dashboard.html', visited_docs=visited_docs,searched_queries = analytics_data.fact_terms ,search_type = search_type,visited_queries = visited_queries, browser_data=analytics_data.fact_browser)
 
 
 
@@ -318,12 +323,13 @@ def sentiment_form_post():
 
 
 def save_data():
-    save_dicts(analytics_data.fact_clicks, analytics_data.fact_queries, analytics_data.fact_terms, analytics_data.fact_se_type)
+    save_dicts(analytics_data.fact_clicks, analytics_data.fact_queries, analytics_data.fact_terms, analytics_data.fact_se_type, analytics_data.fact_browser)
     with open("requests.pkl", 'wb') as file:
         pickle.dump(analytics_data.fact_clicks, file)
         pickle.dump(analytics_data.fact_queries, file)
         pickle.dump(analytics_data.fact_terms, file)
         pickle.dump(analytics_data.fact_se_type, file)
+        pickle.dump(analytics_data.fact_browser, file)
         
 
 if __name__ == "__main__":

@@ -70,6 +70,12 @@
 
     </script>
 
+    <script>
+        const searchedQueriesData = {{ searched_queries | tojson | safe }};
+        console.log("Searched Queries data: ");
+        console.log(searchedQueriesData);
+    </script>
+
     <hr>
     <h5>Print Python data for verification with graph above...</h5>
     {% for doc in visited_docs %}
@@ -129,11 +135,12 @@
     </script>
 
 
-    <h4>Pie Chart</h4>
+    <h4>Pie Chart: Ranking Algorithm</h4>
 
     <script>
         const type_list = {{ search_type | safe }};
     </script>
+
 
     <div id="piechart" class= "piechart-container" ></div>
     <script type="text/javascript">
@@ -147,7 +154,7 @@
         var data = google.visualization.arrayToDataTable(type_list);
         
         // Optional; add a title and set the width and height of the chart
-        var options = {'title':'Search engine stats', 'width':650, 'height':500};
+        var options = {'title':'Ranking Algorithm stats', 'width':650, 'height':500};
 
         // Display the chart inside the <div> element with id="piechart"
         var chart = new google.visualization.PieChart(document.getElementById('piechart'));
@@ -231,6 +238,78 @@
 
 
     <canvas id="dailyVisits2" width="400" height="400"></canvas>
+
+    <h5>Bar Plot of Searched Queries</h5>
+    <canvas id="searchedQueriesChart" width="400" height="400"></canvas>
+
+    <script>
+        // Extract labels and data from the searchedQueriesData
+        const searchedQueriesLabels = Object.keys(searchedQueriesData);
+        const searchedQueriesDataValues = Object.values(searchedQueriesData);
+    
+        const chartData = {
+            labels: searchedQueriesLabels,
+            datasets: [{
+                label: 'Search Count',
+                data: searchedQueriesDataValues,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+    
+        const ctx3 = document.getElementById('searchedQueriesChart').getContext('2d');
+    
+        // Create the bar plot
+        const myChart3 = new Chart(ctx3, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script>
+        const browserData = {{ browser_data | tojson | safe }};
+        console.log("Browser Data: ");
+        console.log(browserData);
+    </script>
+
+    <h5>Pie Chart of Browser Usage</h5>
+    <div id="browserChart" style="width: 400px; height: 400px;"></div>
+
+    <script>
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawBrowserChart);
+
+        function drawBrowserChart() {
+            const data = new google.visualization.DataTable();
+            data.addColumn('string', 'Browser');
+            data.addColumn('number', 'Usage');
+
+            // Convert browserData object to array
+            const browserArray = Object.entries(browserData);
+
+            data.addRows(browserArray);
+
+            const options = {
+            title: 'Browser Usage (per query)',
+            width: 700,
+            height: 700,
+            pieSliceText: 'percentage', // Display percentage on the pie chart
+        };
+
+            const chart = new google.visualization.PieChart(document.getElementById('browserChart'));
+            chart.draw(data, options);
+        }
+    </script>
+
+
 
 
 
