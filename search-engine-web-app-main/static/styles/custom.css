@@ -12,9 +12,9 @@
 
 .userInfoBar {
     width: 250px;
-    background-color: rgb(110, 195, 140);
+    background-color: rgb(150, 150, 150);
     color: white;
-    padding: 47px;
+    padding: 30px;
     box-sizing: border-box;
     position: fixed;
     height: 100%;
@@ -34,9 +34,9 @@
 
 .userInfoButton {
     position: fixed;
-    top: 10px;
+    bottom: 10px;
     right: 10px;
-    background-color: #3498db;
+    background-color: #c8102e;
     color: white;
     border: none;
     padding: 10px 20px;

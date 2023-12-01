@@ -42,8 +42,8 @@
             </div>
             <br>
             <p class="tweet-likes small"><span class="heart-icon">&#x2665;</span> Likes: {{ tweet.likes }}</p>
-            <p class="tweet-retweets small">Retweets: {{ tweet.retweets }}</p>
-            <div class="tweet-hashtags small">Hashtags: 
+            <p class="tweet-retweets small"><span class="retweet-icon">&#10227;</span> Retweets: {{ tweet.retweets }}</p>
+            <div class="tweet-hashtags small">Hashtags: <br>
                 {% for hashtag in tweet.hashtags %}
                     #{{ hashtag }}{% if not loop.last %}, {% endif %}
                 {% endfor %}

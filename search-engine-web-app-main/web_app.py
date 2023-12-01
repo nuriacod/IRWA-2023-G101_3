@@ -162,7 +162,7 @@ def search_form_post():
 
     print(session)
 
-    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count)
+    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, s_type = search_type, query=search_query)
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
@@ -196,7 +196,6 @@ def doc_details():
     
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
-
     return render_template('doc_details.html',tweet=tweet)
 
 
@@ -215,9 +214,6 @@ def stats():
 
     docs = []
     
-  
-    
-
     for doc_id in analytics_data.fact_clicks:
         row: Document = corpus[int(doc_id)]
         count = analytics_data.fact_clicks[doc_id]
@@ -227,7 +223,7 @@ def stats():
 
     # simulate sort by ranking
     docs.sort(key=lambda doc: doc.count, reverse=True)
-    sorted_queries = dict(sorted(analytics_data.fact_queries.items(), key=lambda item: item[1]))
+    sorted_queries = dict(sorted(analytics_data.fact_queries.items(), key=lambda item: item[1], reverse=True))
     return render_template('stats.html', clicks_data=docs, query_data = sorted_queries)
     # ### End replace with your code ###
 

@@ -12,7 +12,8 @@
         <a href="javascript:void(0);" onclick="goBack();" class="go-back-button">Go Back</a>
     </div>
     <br>
-    Found <strong>{{ found_counter }}</strong> results
+    Found <strong>{{ found_counter }}</strong> results for "<strong>{{query}}</strong>"
+    <br>Ranking algorithm: <strong>{{ s_type }}</strong>
     <hr>
     {% for item in results_list %}
         <div class="result-item">

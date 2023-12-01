@@ -32,8 +32,8 @@ def build_demo_results(corpus: dict, search_id):
 class SearchEngine:
     """educational search engine"""
 
-    def search(self, search_query, search_id, corpus, list_of_tweets,search_type):
-        print("Search query:", search_query)
+    def search(self, search_query, search_id, corpus, list_of_tweets ,search_type):
+        #print("Search query:", search_query)
 
         results = []
         ##### your code here #####
