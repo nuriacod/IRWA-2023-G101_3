@@ -2,7 +2,7 @@ import json
 import random
 import pickle
 import os
-filename = "session_variables.pkl"
+filename = "data_collection.pkl"
 def file_exists(filename):
         return os.path.exists(filename)
 
@@ -13,19 +13,21 @@ def load_dicts(filename):
         fact_queries = pickle.load(file)
         fact_terms = pickle.load(file)
         fact_se_type = pickle.load(file)
-        fact_browser = pickle.load(file)  
+        fact_browser = pickle.load(file)
+        fact_request = pickle.load(file)  
 
-    return fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser
+    return fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser ,fact_request
 
 
 # Function to save dictionaries to a pickle file
-def save_dicts(fact_click, fact_queries, fact_terms, fact_se_type, fact_browser):
+def save_dicts(fact_click, fact_queries, fact_terms, fact_se_type, fact_browser, fact_request):
     with open(filename, 'wb') as file:
         pickle.dump(fact_click, file)
         pickle.dump(fact_queries, file)
         pickle.dump(fact_terms, file)
         pickle.dump(fact_se_type, file)
         pickle.dump(fact_browser, file)
+        pickle.dump(fact_request, file)
         
 class AnalyticsData:
 
@@ -49,8 +51,10 @@ class AnalyticsData:
 
     fact_browser = dict([])
     
+    fact_request = dict([])
+    
     if file_exists(filename): 
-        fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser = load_dicts(filename)
+        fact_clicks, fact_queries, fact_terms, fact_se_type, fact_browser,fact_request  = load_dicts(filename)
         
 
 
@@ -88,7 +92,13 @@ class AnalyticsData:
         else: 
             self.fact_browser[browser] = 1
             
-
+    def save_requests(self,requests):
+        session_id = requests[0].session_id
+        if session_id not in self.fact_request.keys():
+            self.fact_request[session_id] = requests
+            
+        else:
+            self.fact_request[session_id].extend(requests)
 
 
 

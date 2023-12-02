@@ -4,6 +4,8 @@ from json import JSONEncoder
 import csv
 import time
 import pickle
+import random
+import itertools 
 
 # pip install httpagentparser
 import httpagentparser  # for getting the user agent as json
@@ -15,7 +17,6 @@ from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc, save_dicts
 from myapp.search.load_corpus import load_corpus, create_list_of_tweets
 from myapp.search.objects import Document, StatsDocument, Session, Click, RequestData
 from myapp.search.search_engine import SearchEngine
-
 
 
 
@@ -38,8 +39,6 @@ sessions = {}
 clicks = []
 requests_data = []
 
-
-
 # random 'secret_key' is used for persisting data in secure cookie
 app.secret_key = 'afgsreg86sr897b6st8b76va8er76fcs6g8d7'
 # open browser dev tool to see the cookies
@@ -50,11 +49,6 @@ search_engine = SearchEngine()
 
 # instantiate our in memory persistence
 analytics_data = AnalyticsData()
-
-# print("current dir", os.getcwd() + "\n")
-# print("__file__", __file__ +path, filename = os.path.split(full_path)
-# print(path + ' --> ' + filename + "\n")
-# load documents corpus into memory.
 
 def csv_to_dict(filepath):
     """
@@ -75,9 +69,8 @@ file_path = "./Rus_Ukr_war_data.json"
 dict_path = './Rus_Ukr_war_data_ids.csv'
 
 
-# file_path = "../../tweets-data-who.json"
 corpus = load_corpus(file_path)
-#print("loaded corpus. first elem:", list(corpus.values())[0])
+
 print('CORPUS IS LOADED')
 global tf, idf, df, tf_idf_index, our_score, list_of_tweets
 tweet_to_doc = csv_to_dict(dict_path) 
@@ -85,15 +78,19 @@ tweet_to_doc = csv_to_dict(dict_path)
 list_of_tweets = create_list_of_tweets(file_path, tweet_to_doc)
 # print(list_of_tweets[0])
 
+@app.before_request
+def before_request():
+    if 'session_index' not in session:
+        session['session_index'] = str(random.randint(0,100000))
+
 # Home URL "/"
 @app.route('/')
 def index():
     print("starting home url /...")
 
-    ##AQUI CREO INSTANCIA DEL HTTP REQUEST DATA ---> CREC QUE FUNCIONA
     #Collect HTTP Requests data
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -133,13 +130,15 @@ def index():
 def search_form_post():
     
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
         # Add more relevant data
     )
     save_data()
+    
+    print("SESSION INDEX",session["session_index"])
 
     # Store request_data in-memory or database
     requests_data.append(request_data)
@@ -157,8 +156,7 @@ def search_form_post():
         search_query = session['last_search_query']
         search_type = session['last_search_type']
 
-    
-  
+ 
     
     results = search_engine.search(search_query, search_id, corpus, list_of_tweets,search_type)
 
@@ -172,7 +170,7 @@ def search_form_post():
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -180,8 +178,6 @@ def doc_details():
     )
     # Store request_data in-memory or database
     requests_data.append(request_data)
-    # getting request parameters:
-    # user = request.args.get('user')
 
     print("doc details session: ")
     print(session)
@@ -198,6 +194,8 @@ def doc_details():
     print("click in id={}".format(clicked_doc_id))
     # store data in statistics table 1
     analytics_data.save_click(clicked_doc_id)
+    analytics_data.save_requests(requests_data)
+    requests_data.clear()
     
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
@@ -207,7 +205,7 @@ def doc_details():
 @app.route('/stats', methods=['GET'])
 def stats():
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -215,6 +213,7 @@ def stats():
     )
     # Store request_data in-memory or database
     requests_data.append(request_data)
+    
 
 
     docs = []
@@ -223,7 +222,6 @@ def stats():
         row: Document = corpus[int(doc_id)]
         count = analytics_data.fact_clicks[doc_id]
         doc = StatsDocument(row.id, row.title, row.description, row.doc_date, row.url, count)
-        print("URL",row.url)
         docs.append(doc)
 
     # simulate sort by ranking
@@ -236,7 +234,7 @@ def stats():
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -250,15 +248,18 @@ def dashboard():
     visited_docs = []
     visited_queries = []
     for doc_id in analytics_data.fact_clicks.keys():
+
         d: Document = corpus[int(doc_id)]
         doc = ClickedDoc(doc_id, d.description, analytics_data.fact_clicks[doc_id])
         visited_docs.append({
             'doc_id': doc.doc_id,
             'description': doc.description,
             'counter': doc.counter
+            
         })
         
-    for query in analytics_data.fact_queries.keys():
+    for i, query in enumerate(analytics_data.fact_queries.keys()):
+        
         visited_queries.append({
             'query': query,
             'counter': analytics_data.fact_queries[query]
@@ -266,26 +267,27 @@ def dashboard():
 
     # simulate sort by ranking
     visited_docs.sort(key=lambda doc: doc['counter'], reverse=True)
+    visited_docs = visited_docs[:10]
     visited_queries.sort(key=lambda query: query['counter'], reverse=True)
+    visited_queries  = visited_queries[:10]
     
     # PIE CHART SEARCH ENGINE
     headers = ['Search engine', 'Times used']
     search_type = [[key, value] for key, value in analytics_data.fact_se_type.items()]
     search_type.insert(0, headers)
 
-    # PIE CHART BROWSER
-    '''headers = ['Browser', 'Times used']
-    browser_type = [[key, value] for key, value in analytics_data.fact_browser.items()]
-    browser_type.insert(0, headers)'''
+    q_terms = analytics_data.fact_terms
+    sorted_q_terms = dict(sorted(q_terms.items(), key=lambda item: item[1], reverse=True))
+    sorted_q_terms = dict(itertools.islice(sorted_q_terms.items(), 15)) 
 
-    return render_template('dashboard.html', visited_docs=visited_docs,searched_queries = analytics_data.fact_terms ,search_type = search_type,visited_queries = visited_queries, browser_data=analytics_data.fact_browser)
+    return render_template('dashboard.html', visited_docs=visited_docs,searched_queries = sorted_q_terms, search_type = search_type,visited_queries = visited_queries, browser_data=analytics_data.fact_browser)
 
 
 
 @app.route('/sentiment')
 def sentiment_form():
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -302,7 +304,7 @@ def sentiment_form():
 @app.route('/sentiment', methods=['POST'])
 def sentiment_form_post():
     request_data = RequestData(
-        session_id=session.get('session_id', None),  # Assuming you have a session_id in the session
+        session_id=session.get('session_index'),  # Assuming you have a session_id in the session
         method=request.method,
         path=request.path,
         user_agent=request.headers.get('User-Agent'),
@@ -323,13 +325,7 @@ def sentiment_form_post():
 
 
 def save_data():
-    save_dicts(analytics_data.fact_clicks, analytics_data.fact_queries, analytics_data.fact_terms, analytics_data.fact_se_type, analytics_data.fact_browser)
-    with open("requests.pkl", 'wb') as file:
-        pickle.dump(analytics_data.fact_clicks, file)
-        pickle.dump(analytics_data.fact_queries, file)
-        pickle.dump(analytics_data.fact_terms, file)
-        pickle.dump(analytics_data.fact_se_type, file)
-        pickle.dump(analytics_data.fact_browser, file)
+    save_dicts(analytics_data.fact_clicks, analytics_data.fact_queries, analytics_data.fact_terms, analytics_data.fact_se_type, analytics_data.fact_browser, analytics_data.fact_request)
         
 
 if __name__ == "__main__":
